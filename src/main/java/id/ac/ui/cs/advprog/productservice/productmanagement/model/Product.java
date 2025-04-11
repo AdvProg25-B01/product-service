@@ -1,8 +1,12 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.model;
 
+import lombok.Setter;
+
 public class Product {
     private String name;
+    @Setter
     private String category;
+    @Setter
     private double price;
 
     public Product(String name, String category, double price) {
