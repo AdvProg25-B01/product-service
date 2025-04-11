@@ -11,11 +11,16 @@ public class TransactionBuilder {
     private List<Product> products = new ArrayList<>();
 
     public TransactionBuilder withId(String id) {
+        this.id = id;
+        return this;
     }
 
     public TransactionBuilder withProduct(Product product) {
+        this.products.add(product);
+        return this;
     }
 
     public Transaction build() {
+        return new Transaction(id, products);
     }
 }
