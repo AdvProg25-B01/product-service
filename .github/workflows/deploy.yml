@@ -121,7 +121,7 @@ jobs:
             docker pull ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
             docker run -d --restart=always --name ${{ secrets.CONTAINER_NAME }} \
               -p 80:8080 \
-              -e PRODUCTION=${{ secrets.PRODUCTION }} \
+              -e SPRING_PROFILES_ACTIVE=prod \
               -e JDBC_DATABASE_URL=${{ secrets.JDBC_DATABASE_URL }} \
               -e JDBC_DATABASE_USERNAME=${{ secrets.JDBC_DATABASE_USERNAME }} \
               -e JDBC_DATABASE_PASSWORD=${{ secrets.JDBC_DATABASE_PASSWORD }} \
