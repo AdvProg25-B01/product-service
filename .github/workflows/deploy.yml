@@ -35,6 +35,9 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew bootJar
 
+      - name: Check where JAR is being created
+        run: find . -name '*.jar'
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:

@@ -16,7 +16,7 @@ java {
     }
 }
 
-tasks.named<BootJar>("bootJar") {
+tasks.withType<BootJar>().configureEach {
     destinationDirectory.set(layout.buildDirectory.dir("libs"))
 }
 
