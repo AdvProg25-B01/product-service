@@ -10,6 +10,6 @@ ENV JDBC_DATABASE_URL ${JDBC_DATABASE_URL}
 ENV JDBC_DATABASE_USERNAME ${JDBC_DATABASE_USERNAME}
 
 WORKDIR /app
-COPY ./product-service-0.0.1-SNAPSHOT.jar /app
+COPY build/libs/product-service-0.0.1-SNAPSHOT.jar /app
 EXPOSE 8080
 CMD ["java","-jar","product-service-0.0.1-SNAPSHOT.jar"]
