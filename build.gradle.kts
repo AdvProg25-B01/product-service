@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     java
     jacoco
@@ -78,7 +80,6 @@ tasks.jacocoTestReport {
     dependsOn(tasks.test)
 }
 
-tasks.named<Jar>("bootJar") {
-    destinationDirectory.set(file("."))
+tasks.named<BootJar>("bootJar") {
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
 }
-
