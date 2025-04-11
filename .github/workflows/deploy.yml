@@ -32,7 +32,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: ./gradlew assemble
+        run: ./gradlew bootJar
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -85,8 +85,13 @@ jobs:
         with:
           name: java-app
 
+      - name: List contents of build/libs
+        run: ls -al build/libs
+
       - name: Rename Artifact
-        run: mv build/libs/*.jar product-service-0.0.1-SNAPSHOT.jar
+        run: |
+          JAR_FILE=$(ls build/libs/*.jar | head -n 1)
+          mv "$JAR_FILE" product-service-0.0.1-SNAPSHOT.jar
 
       - name: Docker login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin
