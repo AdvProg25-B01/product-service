@@ -9,5 +9,10 @@ import java.util.List;
 public class TransactionFactory {
 
     public static Transaction create(String id, List<Product> products) {
+        TransactionBuilder builder = new TransactionBuilder().withId(id);
+        for (Product product : products) {
+            builder.withProduct(product);
+        }
+        return builder.build();
     }
 }
