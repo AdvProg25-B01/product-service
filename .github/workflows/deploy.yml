@@ -87,10 +87,15 @@ jobs:
           name: java-app
           path: build/libs
 
-      - name: Rename JAR to standard name
+      - name: Rename JAR to standard name (if needed)
         run: |
           JAR=$(ls build/libs/*.jar | head -n 1)
-          mv "$JAR" build/libs/product-service-0.0.1-SNAPSHOT.jar
+          TARGET="build/libs/product-service-0.0.1-SNAPSHOT.jar"
+          if [ "$JAR" != "$TARGET" ]; then
+            mv "$JAR" "$TARGET"
+          else
+            echo "JAR already has the correct name."
+          fi
 
       - name: Docker login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin
