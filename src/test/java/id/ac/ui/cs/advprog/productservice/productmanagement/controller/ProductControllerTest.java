@@ -4,8 +4,10 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -101,7 +103,7 @@ public class ProductControllerTest {
 
     // Test for Edit Product Failure (Product Not Found)
     @Test
-    void testEditProductFailure() throws Exception {
+    void testEditProductNotFoundFailure() throws Exception {
         when(productService.getAllProducts()).thenReturn(Arrays.asList(product));
 
         mockMvc.perform(get("/product/edit/NonExistentProduct"))
@@ -125,7 +127,7 @@ public class ProductControllerTest {
 
     // Test for Editing Product Failure (Not Confirmed)
     @Test
-    void testEditProductFailure() throws Exception {
+    void testEditProductNotConfirmedFailure() throws Exception {
         when(productService.editProduct(Mockito.any(Product.class), Mockito.anyBoolean())).thenReturn(false);
 
         mockMvc.perform(post("/product/edit")
