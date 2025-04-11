@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     java
     jacoco
@@ -12,6 +14,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+tasks.withType<BootJar>().configureEach {
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
 }
 
 configurations {

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   build:
@@ -20,6 +21,9 @@ jobs:
           java-version: "21"
           cache: "gradle"
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -28,11 +32,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
       - name: Build with Gradle
-        run: ./gradlew assemble
+        run: ./gradlew bootJar
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -84,9 +85,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app
+          path: build/libs
 
-      - name: Rename Artifact
-        run: mv build/libs/*.jar product-service-0.0.1-SNAPSHOT.jar
+      - name: Rename JAR to standard name (if needed)
+        run: |
+          JAR=$(ls build/libs/*.jar | head -n 1)
+          TARGET="build/libs/product-service-0.0.1-SNAPSHOT.jar"
+          if [ "$JAR" != "$TARGET" ]; then
+            mv "$JAR" "$TARGET"
+          else
+            echo "JAR already has the correct name."
+          fi
 
       - name: Docker login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin
@@ -107,15 +116,15 @@ jobs:
       - name: Install SSH client
         run: sudo apt-get install -y openssh-client
 
-      - name: Decode SSH key file
-        run: echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > ec2-key.pem
+      - name: Decode SSH key
+        run: echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > product-service_key.pem
 
       - name: Set SSH key permissions
-        run: chmod 400 ec2-key.pem
+        run: chmod 400 product-service_key.pem
 
       - name: Deploy Docker container to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i product-service_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             docker container rm -f ${{ secrets.CONTAINER_NAME }} || true
             docker image rm -f ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} || true
             docker pull ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
