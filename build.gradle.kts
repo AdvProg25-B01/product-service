@@ -77,3 +77,8 @@ tasks.test {
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
 }
+
+tasks.named<Jar>("bootJar") {
+    destinationDirectory.set(file("."))
+}
+

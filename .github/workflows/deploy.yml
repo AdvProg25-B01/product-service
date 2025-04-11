@@ -87,7 +87,7 @@ jobs:
           name: java-app
 
       - name: List contents of build/libs
-        run: ls -al
+        run: ls -al build/libs
 
       - name: Rename Artifact
         run: |
