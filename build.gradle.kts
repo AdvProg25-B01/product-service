@@ -5,7 +5,7 @@ plugins {
     jacoco
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.sonarqube") version "6.0.1.5171"
+    id("org.sonarqube") version "4.3.1.3277"
 }
 
 sonar {
@@ -59,18 +59,30 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
 
+// Register unitTest task (explicit classpath + testClassesDirs)
 tasks.register<Test>("unitTest") {
     description = "Runs unit tests."
     group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform()
 
     filter {
         excludeTestsMatching("*FunctionalTest")
     }
 }
 
+// Register functionalTest task
 tasks.register<Test>("functionalTest") {
     description = "Runs functional tests."
     group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform()
 
     filter {
         includeTestsMatching("*FunctionalTest")
