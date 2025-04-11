@@ -12,8 +12,11 @@ public class Transaction {
     private List<Product> products;
 
     public Transaction(String id, List<Product> products) {
+        this.id = id;
+        this.products = products;
     }
 
     public double getTotalAmount() {
+        return products.stream().mapToDouble(Product::getPrice).sum();
     }
 }
