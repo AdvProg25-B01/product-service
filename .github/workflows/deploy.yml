@@ -108,6 +108,7 @@ jobs:
   deploy:
     name: Deploy to AWS EC2
     runs-on: ubuntu-latest
+    environment: production-aws/product
     needs: publish
     steps:
       - name: Checkout the Git Repository
