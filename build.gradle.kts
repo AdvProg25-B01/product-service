@@ -16,6 +16,10 @@ java {
     }
 }
 
+tasks.named<BootJar>("bootJar") {
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
+}
+
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
@@ -78,8 +82,4 @@ tasks.test {
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
-}
-
-tasks.named<BootJar>("bootJar") {
-    destinationDirectory.set(layout.buildDirectory.dir("libs"))
 }
