@@ -1,11 +1,13 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.repository;
 
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class ProductRepository {
     private final List<Product> products = new ArrayList<>();
 
