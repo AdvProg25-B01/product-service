@@ -9,6 +9,9 @@ build/
 src/main/resources/.env
 *.env
 
+*.pem
+.DS_Store
+
 ### STS ###
 .apt_generated
 .classpath

@@ -77,9 +77,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Rename Artifact (if needed)
-        run: |
-          mv *.jar product-service-0.0.1-SNAPSHOT.jar
+      - name: Checkout the Git Repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: java-app
+
+      - name: Rename Artifact
+        run: mv build/libs/*.jar product-service-0.0.1-SNAPSHOT.jar
 
       - name: Docker login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin
@@ -100,19 +107,19 @@ jobs:
       - name: Install SSH client
         run: sudo apt-get install -y openssh-client
 
-      - name: Create SSH key file
-        run: echo "${{ secrets.EC2_SSH_KEY }}" > ec2-key.pem
+      - name: Decode SSH key file
+        run: echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > ec2-key.pem
 
       - name: Set SSH key permissions
         run: chmod 400 ec2-key.pem
 
       - name: Deploy Docker container to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             docker container rm -f ${{ secrets.CONTAINER_NAME }} || true
             docker image rm -f ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} || true
             docker pull ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
-            docker run -d --name ${{ secrets.CONTAINER_NAME }} \
+            docker run -d --restart=always --name ${{ secrets.CONTAINER_NAME }} \
               -p 80:8080 \
               -e PRODUCTION=${{ secrets.PRODUCTION }} \
               -e JDBC_DATABASE_URL=${{ secrets.JDBC_DATABASE_URL }} \
