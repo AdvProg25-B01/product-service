@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
+import java.util.List;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +20,7 @@ public class PaymentRepositoryTest {
         repository = new PaymentRepository();
         payment = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
         repository.save(payment);
+        repository.clear();
     }
 
     @Test
@@ -29,30 +32,54 @@ public class PaymentRepositoryTest {
 
     @Test
     void testFindByIdSuccessfully() {
-        Payment found = repository.findById("p1");
-        assertNotNull(found);
-        assertEquals("c1", found.getCustomerId());
+        Payment payment = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
+        repository.save(payment);
+
+        Payment foundPayment = repository.findById("p1");
+
+        assertNotNull(foundPayment);
+        assertEquals("p1", foundPayment.getId());
     }
 
     @Test
     void testFindByCustomerIdSuccessfully() {
-        Payment found = repository.findByCustomerId("c1");
-        assertNotNull(found);
-        assertEquals("p1", found.getId());
+        Payment payment1 = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
+        repository.save(payment1);
+
+        List<Payment> foundPayments = repository.findByCustomerId("c1");
+
+        assertNotNull(foundPayments);
+        assertEquals(1, foundPayments.size());
+        assertEquals("p1", foundPayments.get(0).getId());
     }
 
     @Test
     void testUpdateSuccessfully() {
-        payment.setStatus("PAID");
-        Payment updated = repository.update(payment);
-        assertEquals("PAID", updated.getStatus());
+        Payment payment = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
+        repository.save(payment);
+
+        payment.setStatus("COMPLETED");
+        Payment updatedPayment = repository.update(payment);
+
+        assertNotNull(updatedPayment);
+        assertEquals("COMPLETED", updatedPayment.getStatus());
     }
 
     @Test
     void testDeleteSuccessfully() {
+        Payment payment = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
+        repository.save(payment);
+
+        Payment foundPayment = repository.findById("p1");
+        assertNotNull(foundPayment);
+
         boolean deleted = repository.delete(payment);
         assertTrue(deleted);
+
+        Payment deletedPayment = repository.findById("p1");
+        assertNull(deletedPayment);
     }
+
 
     @Test
     void testFindByIdNotFound() {
@@ -62,8 +89,9 @@ public class PaymentRepositoryTest {
 
     @Test
     void testFindByCustomerIdNotFound() {
-        Payment notFound = repository.findByCustomerId("unknown");
-        assertNull(notFound);
+        List<Payment> notFound = repository.findByCustomerId("unknown");
+        assertNotNull(notFound);
+        assertTrue(notFound.isEmpty());
     }
 
     @Test
@@ -75,8 +103,10 @@ public class PaymentRepositoryTest {
 
     @Test
     void testDeleteNonExistentPayment() {
-        Payment fakePayment = new Payment("px", "cx", 0.0, "GOPAY", "PENDING", new Date());
-        boolean deleted = repository.delete(fakePayment);
-        assertFalse(deleted);
+        Payment nonExistentPayment = new Payment("p99", "c99", 100.0, "OVO", "PENDING", new Date());
+
+        assertThrows(RuntimeException.class, () -> {
+            repository.delete(nonExistentPayment);
+        });
     }
 }
