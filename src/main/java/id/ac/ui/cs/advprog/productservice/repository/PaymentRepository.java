@@ -10,9 +10,15 @@ public class PaymentRepository {
     private final List<Payment> payments = new ArrayList<>();
 
     public Payment save(Payment payment) {
+        for (Payment existingPayment : payments) {
+            if (existingPayment.getId().equals(payment.getId())) {
+                throw new RuntimeException("Payment with this ID already exists");
+            }
+        }
         payments.add(payment);
         return payment;
     }
+
 
     public Payment findById(String id) {
         return payments.stream()
@@ -21,11 +27,14 @@ public class PaymentRepository {
                 .orElse(null);
     }
 
-    public Payment findByCustomerId(String customerId) {
-        return payments.stream()
-                .filter(p -> p.getCustomerId().equals(customerId))
-                .findFirst()
-                .orElse(null);
+    public List<Payment> findByCustomerId(String customerId) {
+        List<Payment> result = new ArrayList<>();
+        for (Payment p : payments) {
+            if (p.getCustomerId().equals(customerId)) {
+                result.add(p);
+            }
+        }
+        return result;
     }
 
     public Payment update(Payment payment) {
@@ -39,6 +48,14 @@ public class PaymentRepository {
     }
 
     public boolean delete(Payment payment) {
+        if (payments.stream().noneMatch(p -> p.getId().equals(payment.getId()))) {
+            throw new RuntimeException("Payment not found");
+        }
         return payments.removeIf(p -> p.getId().equals(payment.getId()));
     }
+
+    public void clear() {
+        payments.clear();
+    }
+
 }

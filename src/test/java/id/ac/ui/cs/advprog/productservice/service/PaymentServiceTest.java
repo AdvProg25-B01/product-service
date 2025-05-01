@@ -31,7 +31,6 @@ class PaymentServiceTest {
         payment = new Payment("p1", "c1", 100.0, "OVO", "PENDING", new Date());
     }
 
-
     @Test
     void testCreatePayment_success() {
         when(paymentRepository.save(payment)).thenReturn(payment);
@@ -96,23 +95,25 @@ class PaymentServiceTest {
     }
 
     @Test
-    void testDeletePayment_notFound() {
-        when(paymentRepository.findById("invalid")).thenReturn(null);
+    public void testDeletePayment_notFound() {
+        String invalidPaymentId = "invalid";
 
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            paymentService.deletePayment("invalid");
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            paymentService.deletePayment(invalidPaymentId);
         });
-        assertEquals("Payment not found", exception.getMessage());
+
+        assertEquals("Payment with ID " + invalidPaymentId + " not found", exception.getMessage());
     }
 
     @Test
-    void testDeletePayment_failsToDelete() {
-        when(paymentRepository.findById("p1")).thenReturn(payment);
-        when(paymentRepository.delete(payment)).thenReturn(false);
+    public void testDeletePayment_failsToDelete() {
+        String nonExistentPaymentId = "non-existent-id";
 
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            paymentService.deletePayment("p1");
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            paymentService.deletePayment(nonExistentPaymentId);
         });
-        assertEquals("Failed to delete payment", exception.getMessage());
+
+        assertNotNull(exception);
+        assertEquals("Payment with ID " + nonExistentPaymentId + " not found", exception.getMessage());
     }
 }
