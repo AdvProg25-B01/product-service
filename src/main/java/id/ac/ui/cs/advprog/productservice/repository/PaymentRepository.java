@@ -6,25 +6,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PaymentRepository {
+
     private final List<Payment> payments = new ArrayList<>();
 
     public Payment save(Payment payment) {
-        return null;
+        payments.add(payment);
+        return payment;
     }
 
     public Payment findById(String id) {
-        return null;
+        return payments.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
     public Payment findByCustomerId(String customerId) {
-        return null;
+        return payments.stream()
+                .filter(p -> p.getCustomerId().equals(customerId))
+                .findFirst()
+                .orElse(null);
     }
 
     public Payment update(Payment payment) {
+        for (int i = 0; i < payments.size(); i++) {
+            if (payments.get(i).getId().equals(payment.getId())) {
+                payments.set(i, payment);
+                return payment;
+            }
+        }
         return null;
     }
 
     public boolean delete(Payment payment) {
-        return false;
+        return payments.removeIf(p -> p.getId().equals(payment.getId()));
     }
 }
