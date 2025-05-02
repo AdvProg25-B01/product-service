@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.service;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -41,5 +42,18 @@ public class ProductService {
 
     public List<Product> getAllProducts() {
         return repository.findAll();
+    }
+
+    public boolean addValidatedProduct(Product rawProduct) {
+        try {
+            Product product = ProductFactory.createProduct(
+                    rawProduct.getName(),
+                    rawProduct.getCategory(),
+                    rawProduct.getPrice()
+            );
+            return addProduct(product, true);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 }

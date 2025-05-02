@@ -154,4 +154,14 @@ public class ProductControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Product deletion failed."));
     }
+
+    @Test
+    void testCreateProductWithInvalidData() throws Exception {
+        // price = 0 will trigger IllegalArgumentException from factory
+        mockMvc.perform(post("/product/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"\",\"category\":\"\",\"price\":0.0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Product is invalid or could not be created")); // Update this line
+    }
 }
