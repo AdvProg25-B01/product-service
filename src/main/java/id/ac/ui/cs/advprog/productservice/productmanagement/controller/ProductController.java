@@ -26,7 +26,7 @@ public class ProductController {
                     incomingProduct.getCategory(),
                     incomingProduct.getPrice()
             );
-            boolean success = productService.addProduct(product, false);
+            boolean success = productService.addProduct(product, true); // Change false to true
             if (!success) {
                 return ResponseEntity.badRequest().body("Product is invalid or could not be created");
             }
