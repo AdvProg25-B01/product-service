@@ -15,6 +15,6 @@ public class CreatePaymentCommand implements PaymentCommand {
 
     @Override
     public void execute() {
-        // TODO
+        service.createPayment(payment);
     }
 }

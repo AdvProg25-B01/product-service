@@ -13,6 +13,6 @@ public class ViewPaymentHistoryCommand implements PaymentCommand {
 
     @Override
     public void execute() {
-        // TODO
+        service.getPaymentsByCustomerId(customerId);
     }
 }

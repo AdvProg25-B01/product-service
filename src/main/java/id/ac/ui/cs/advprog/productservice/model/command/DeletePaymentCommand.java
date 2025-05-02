@@ -14,6 +14,6 @@ public class DeletePaymentCommand implements PaymentCommand {
 
     @Override
     public void execute() {
-        // TODO
+        service.deletePayment(paymentId);
     }
 }
