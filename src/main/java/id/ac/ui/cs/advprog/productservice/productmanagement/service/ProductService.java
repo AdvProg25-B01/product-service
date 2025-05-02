@@ -17,7 +17,7 @@ public class ProductService {
     }
 
     public boolean addProduct(Product product, boolean confirmed) {
-        if (!confirmed || product.getPrice() < 0) {
+        if (!confirmed || product.getPrice() <= 0) {
             return false;
         }
         repository.save(product);
@@ -42,18 +42,5 @@ public class ProductService {
 
     public List<Product> getAllProducts() {
         return repository.findAll();
-    }
-
-    public boolean addValidatedProduct(Product rawProduct) {
-        try {
-            Product product = ProductFactory.createProduct(
-                    rawProduct.getName(),
-                    rawProduct.getCategory(),
-                    rawProduct.getPrice()
-            );
-            return addProduct(product, true);
-        } catch (IllegalArgumentException ex) {
-            return false;
-        }
     }
 }
