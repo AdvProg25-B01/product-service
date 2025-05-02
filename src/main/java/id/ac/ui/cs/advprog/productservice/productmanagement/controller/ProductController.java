@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.controller;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +19,21 @@ public class ProductController {
 
     // Create a new product (REST API version)
     @PostMapping("/create")
-    public ResponseEntity<?> createProduct(@RequestBody Product product) {
-        boolean success = productService.addProduct(product, true); // Auto-confirm for API
-
-        if (!success) {
-            return ResponseEntity.badRequest()
-                    .body("Product is invalid or could not be created");
+    public ResponseEntity<?> createProduct(@RequestBody Product incomingProduct) {
+        try {
+            Product product = ProductFactory.createProduct(
+                    incomingProduct.getName(),
+                    incomingProduct.getCategory(),
+                    incomingProduct.getPrice()
+            );
+            boolean success = productService.addProduct(product, false);
+            if (!success) {
+                return ResponseEntity.badRequest().body("Product is invalid or could not be created");
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(product);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Product is invalid or could not be created");
         }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(product);
     }
 
     // Get all products
