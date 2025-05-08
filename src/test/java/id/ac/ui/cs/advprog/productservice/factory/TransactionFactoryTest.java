@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.factory;
 
-import id.ac.ui.cs.advprog.productservice.model.Product;
+import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
 import org.junit.jupiter.api.Test;
 
@@ -12,8 +12,8 @@ class TransactionFactoryTest {
 
     @Test
     void shouldCreateTransactionFromFactory() {
-        Product p1 = new Product("P01", "Monitor", 500_000);
-        Product p2 = new Product("P02", "HDMI Cable", 100_000);
+        Product p1 = new Product("Monitor", "Electronics", 500_000);
+        Product p2 = new Product("HDMI Cable", "Accessories", 100_000);
 
         Transaction transaction = TransactionFactory.create("T02", List.of(p1, p2));
 
