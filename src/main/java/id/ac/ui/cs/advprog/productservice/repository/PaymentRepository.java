@@ -58,5 +58,4 @@ public class PaymentRepository {
     public void clear() {
         payments.clear();
     }
-
 }

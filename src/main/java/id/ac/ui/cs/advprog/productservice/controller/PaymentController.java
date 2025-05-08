@@ -20,29 +20,46 @@ public class PaymentController {
 
     @PostMapping
     public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
-        return null;
+        URI location = URI.create("/payments/" + payment.getId());
+        return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<Payment>> getPaymentsByCustomerId(@PathVariable String customerId) {
-        return null;
+        List<Payment> payments = paymentService.getPaymentsByCustomerId(customerId);
+        return ResponseEntity.ok(payments);
     }
 
     @PutMapping("/{paymentId}/status")
     public ResponseEntity<?> updatePaymentStatus(
             @PathVariable String paymentId,
             @RequestParam String status
-    ) {return null;
+    ) {
+        try {
+            if (!status.equals("LUNAS") && !status.equals("CICILAN")) {
+                return ResponseEntity.badRequest().body("Invalid status");
+            }
+            paymentService.updatePaymentStatus(paymentId, status);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            throw new RuntimeException("Update failed", e);
+        }
     }
 
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<Void> deletePayment(@PathVariable String paymentId) {
-        return null;
+        try {
+            paymentService.deletePayment(paymentId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            throw new RuntimeException("Delete failed", e);
+        }
     }
 
     @GetMapping("/{paymentId}")
     public ResponseEntity<Payment> getPaymentById(@PathVariable String paymentId) {
-        return null;
+        Payment payment = paymentService.getPaymentById(paymentId);
+        return ResponseEntity.ok(payment);
     }
 
     @ExceptionHandler(RuntimeException.class)
