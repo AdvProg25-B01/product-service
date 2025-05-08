@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.model;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import lombok.Getter;
 import lombok.Setter;
 
