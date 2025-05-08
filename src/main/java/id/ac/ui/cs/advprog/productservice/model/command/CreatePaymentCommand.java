@@ -5,8 +5,8 @@ import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 
 public class CreatePaymentCommand implements PaymentCommand {
 
-    private PaymentServiceImpl service;
-    private Payment payment;
+    private final PaymentServiceImpl service;
+    private final Payment payment;
 
     public CreatePaymentCommand(PaymentServiceImpl service, Payment payment) {
         this.service = service;
