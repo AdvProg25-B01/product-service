@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.productservice.model.builder;
 
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
-import id.ac.ui.cs.advprog.productservice.model.Product;
+import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 
 import java.util.List;
 import java.util.ArrayList;
