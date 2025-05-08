@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.model;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -10,8 +11,8 @@ class TransactionTest {
 
     @Test
     void shouldReturnCorrectTotalAmount() {
-        Product p1 = new Product("P001", "Pulpen", 3000);
-        Product p2 = new Product("P002", "Buku", 10000);
+        Product p1 = new Product("Pulpen", "Stationery", 3000);
+        Product p2 = new Product("Buku", "Stationery", 10000);
 
         Transaction transaction = new Transaction("T123", List.of(p1, p2));
 
