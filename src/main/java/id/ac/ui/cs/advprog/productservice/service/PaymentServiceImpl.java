@@ -3,9 +3,11 @@ package id.ac.ui.cs.advprog.productservice.service;
 import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.repository.PaymentRepository;
 
-import java.util.List;
-import java.util.Objects;
+import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+@Service
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository repository;
