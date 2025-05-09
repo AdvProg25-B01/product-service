@@ -1,54 +1,52 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.controller;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequestMapping("/product")
 public class ProductController {
 
     @Autowired
     private ProductService productService;
 
-    // Form to input a new product
-    @GetMapping("/create")
-    public String createProductPage(Model model) {
-        model.addAttribute("product", new Product("", "", 0));
-        return "CreateProduct";
-    }
-
-    // Process saving a new product
+    // Create a new product (REST API version)
     @PostMapping("/create")
-    public String createProduct(@ModelAttribute Product product,
-                                @RequestParam(defaultValue = "false") boolean confirm,
-                                Model model) {
-        boolean success = productService.addProduct(product, confirm);
-
-        if (!success) {
-            model.addAttribute("error", "Product is invalid or not confirmed.");
-            return "CreateProduct";
+    public ResponseEntity<?> createProduct(@RequestBody Product incomingProduct) {
+        try {
+            Product product = ProductFactory.createProduct(
+                    incomingProduct.getName(),
+                    incomingProduct.getCategory(),
+                    incomingProduct.getStock(),
+                    incomingProduct.getPrice()
+            );
+            boolean success = productService.addProduct(product, true);
+            if (!success) {
+                return ResponseEntity.badRequest().body("Product is invalid or could not be created");
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(product);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Product is invalid or could not be created");
         }
-
-        return "redirect:/product/list";
     }
 
-    // Display all products
+    // Get all products
     @GetMapping("/list")
-    public String listProducts(Model model) {
+    public ResponseEntity<List<Product>> listProducts() {
         List<Product> products = productService.getAllProducts();
-        model.addAttribute("products", products);
-        return "ProductList";
+        return ResponseEntity.ok(products);
     }
 
-    // Form to edit an existing product
-    @GetMapping("/edit/{name}")
-    public String editProductPage(@PathVariable String name, Model model) {
+    // Get a single product
+    @GetMapping("/{name}")
+    public ResponseEntity<?> getProduct(@PathVariable String name) {
         List<Product> products = productService.getAllProducts();
         Product product = products.stream()
                 .filter(p -> p.getName().equals(name))
@@ -56,40 +54,53 @@ public class ProductController {
                 .orElse(null);
 
         if (product == null) {
-            model.addAttribute("error", "Product not found.");
-            return "redirect:/product/list";
+            return ResponseEntity.notFound().build();
         }
 
-        model.addAttribute("product", product);
-        return "EditProduct";
+        return ResponseEntity.ok(product);
     }
 
-    // Process editing an existing product
-    @PostMapping("/edit")
-    public String editProduct(@ModelAttribute Product product,
-                              @RequestParam(defaultValue = "false") boolean confirm,
-                              Model model) {
-        boolean success = productService.editProduct(product, confirm);
+    // Get a product by ID
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getProductById(@PathVariable String id) {
+        List<Product> products = productService.getAllProducts();
+        Product product = products.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst()
+                .orElse(null);
 
-        if (!success) {
-            model.addAttribute("error", "Edit failed. Product not confirmed.");
-            return "EditProduct";
+        if (product == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Product with ID '" + id + "' not found");
         }
 
-        return "redirect:/product/list";
+        return ResponseEntity.ok(product);
+    }
+
+    // Update an existing product
+    @PutMapping("/edit/{name}")
+    public ResponseEntity<?> editProduct(@PathVariable String name,
+                                         @RequestBody Product product) {
+        boolean success = productService.editProduct(product, true); // Auto-confirm for API
+
+        if (!success) {
+            return ResponseEntity.badRequest()
+                    .body("Edit failed. Product could not be updated.");
+        }
+
+        return ResponseEntity.ok(product);
     }
 
     // Delete a product
-    @PostMapping("/delete")
-    public String deleteProduct(@RequestParam("name") String name,
-                                @RequestParam(defaultValue = "false") boolean confirm,
-                                Model model) {
-        boolean success = productService.deleteProduct(name, confirm);
+    @DeleteMapping("/delete/{name}")
+    public ResponseEntity<?> deleteProduct(@PathVariable String name) {
+        boolean success = productService.deleteProduct(name, true); // Auto-confirm for API
 
         if (!success) {
-            model.addAttribute("error", "Product deletion failed. Not confirmed.");
+            return ResponseEntity.badRequest()
+                    .body("Product deletion failed.");
         }
 
-        return "redirect:/product/list";
+        return ResponseEntity.ok().body("Product deleted successfully");
     }
 }

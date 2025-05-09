@@ -9,26 +9,31 @@ public class ProductFactoryTest {
 
     @Test
     public void testCreateValidProduct() {
-        Product product = ProductFactory.createProduct("Laptop", "Elektronik", 15000000.0);
+        Product product = ProductFactory.createProduct("Laptop", "Elektronik", 30, 15000000.0);
 
         assertNotNull(product);
         assertEquals("Laptop", product.getName());
         assertEquals("Elektronik", product.getCategory());
+        assertEquals(30, product.getStock());
         assertEquals(15000000.0, product.getPrice());
     }
 
     @Test
     public void testCreateInvalidProduct() {
         assertThrows(IllegalArgumentException.class, () -> {
-            ProductFactory.createProduct("", "Elektronik", 15000000.0);
+            ProductFactory.createProduct("", "Elektronik", 30, 15000000.0);
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            ProductFactory.createProduct("Laptop", "", 15000000.0);
+            ProductFactory.createProduct("Laptop", "", 30, 15000000.0);
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            ProductFactory.createProduct("Laptop", "Elektronik", -5000.0);
+            ProductFactory.createProduct("Laptop", "Elektronik", 0, 15000000.0);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            ProductFactory.createProduct("Laptop", "Elektronik", 30, -5000.0);
         });
     }
 }

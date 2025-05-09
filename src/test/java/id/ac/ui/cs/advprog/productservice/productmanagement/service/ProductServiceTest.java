@@ -20,7 +20,7 @@ public class ProductServiceTest {
 
     @Test
     public void testAddValidProductShouldBeSaved() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30,15000000.0);
         boolean result = productService.addProduct(product, true); // true = user konfirmasi
 
         assertTrue(result);
@@ -29,7 +29,7 @@ public class ProductServiceTest {
 
     @Test
     public void testAddInvalidProductShouldNotBeSaved() {
-        Product product = new Product("Laptop", "Elektronik", -5000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, -5000.0);
         boolean result = productService.addProduct(product, true);
 
         assertFalse(result);
@@ -38,7 +38,7 @@ public class ProductServiceTest {
 
     @Test
     public void testAddProductWithoutConfirmationShouldNotBeSaved() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30,15000000.0);
         boolean result = productService.addProduct(product, false); // user tidak konfirmasi
 
         assertFalse(result);
@@ -47,10 +47,10 @@ public class ProductServiceTest {
 
     @Test
     public void testEditProductSuccessfully() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         productService.addProduct(product, true);
 
-        Product updated = new Product("Laptop", "Gadget", 12000000.0);
+        Product updated = new Product("Laptop", "Gadget", 20, 12000000.0);
         boolean result = productService.editProduct(updated, true); // konfirmasi
 
         assertTrue(result);
@@ -61,10 +61,10 @@ public class ProductServiceTest {
 
     @Test
     public void testEditProductWithoutConfirmationShouldNotChange() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         productService.addProduct(product, true);
 
-        Product updated = new Product("Laptop", "Gadget", 12000000.0);
+        Product updated = new Product("Laptop", "Gadget", 30, 12000000.0);
         boolean result = productService.editProduct(updated, false); // batal konfirmasi
 
         assertFalse(result);
@@ -74,7 +74,7 @@ public class ProductServiceTest {
 
     @Test
     public void testDeleteProductSuccessfully() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         productService.addProduct(product, true);
 
         boolean result = productService.deleteProduct("Laptop", true);
@@ -84,7 +84,7 @@ public class ProductServiceTest {
 
     @Test
     public void testDeleteProductWithoutConfirmationShouldNotDelete() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         productService.addProduct(product, true);
 
         boolean result = productService.deleteProduct("Laptop", false);

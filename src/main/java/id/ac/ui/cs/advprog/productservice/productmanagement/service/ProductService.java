@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.service;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class ProductService {
     }
 
     public boolean addProduct(Product product, boolean confirmed) {
-        if (!confirmed || product.getPrice() < 0) {
+        if (!confirmed || product.getPrice() <= 0) {
             return false;
         }
         repository.save(product);
