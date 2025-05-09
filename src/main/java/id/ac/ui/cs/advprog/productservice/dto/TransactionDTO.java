@@ -21,7 +21,18 @@ public class TransactionDTO {
     private Date updatedAt;
 
     public static TransactionDTO fromTransaction(Transaction transaction) {
-
+        TransactionDTO dto = new TransactionDTO();
+        dto.setId(transaction.getId());
+        dto.setCustomerId(transaction.getCustomerId());
+        dto.setItems(transaction.getItems().stream()
+                .map(TransactionItemDTO::fromTransactionItem)
+                .collect(Collectors.toList()));
+        dto.setTotalAmount(transaction.getTotalAmount());
+        dto.setPaymentMethod(transaction.getPaymentMethod());
+        dto.setStatus(transaction.getStatus());
+        dto.setCreatedAt(transaction.getCreatedAt());
+        dto.setUpdatedAt(transaction.getUpdatedAt());
+        return dto;
     }
 
     @Data
@@ -33,6 +44,13 @@ public class TransactionDTO {
         private double subtotal;
 
         public static TransactionItemDTO fromTransactionItem(TransactionItem item) {
+            TransactionItemDTO dto = new TransactionItemDTO();
+            dto.setProductId(item.getProduct().getId());
+            dto.setProductName(item.getProduct().getName());
+            dto.setPrice(item.getProduct().getPrice());
+            dto.setQuantity(item.getQuantity());
+            dto.setSubtotal(item.getSubtotal());
+            return dto;
         }
     }
 }
