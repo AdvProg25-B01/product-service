@@ -91,4 +91,23 @@ public class ProductServiceTest {
         assertFalse(result);
         assertEquals(1, productService.getAllProducts().size());
     }
+
+    @Test
+    public void testGetProductByIdSuccess() {
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
+        productService.addProduct(product, true);
+
+        String id = product.getId();
+        Product found = productService.getProductById(id).orElse(null);
+
+        assertNotNull(found);
+        assertEquals(id, found.getId());
+        assertEquals("Laptop", found.getName());
+    }
+
+    @Test
+    public void testGetProductByIdNotFound() {
+        Product found = productService.getProductById("non-existent-id").orElse(null);
+        assertNull(found);
+    }
 }

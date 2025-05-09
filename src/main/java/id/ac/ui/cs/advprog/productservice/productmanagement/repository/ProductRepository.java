@@ -26,6 +26,12 @@ public class ProductRepository {
                 .findFirst();
     }
 
+    public Optional<Product> findById(String id) {
+        return products.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst();
+    }
+
     public void update(Product updatedProduct) {
         findByName(updatedProduct.getName()).ifPresent(p -> {
             p.setCategory(updatedProduct.getCategory());

@@ -83,4 +83,24 @@ public class ProductRepositoryTest {
         repository.delete("Laptop");
         assertTrue(repository.findAll().isEmpty());
     }
+
+    @Test
+    public void testFindById() {
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
+        repository.save(product);
+
+        String productId = product.getId(); // UUID generated internally
+
+        Product found = repository.findById(productId).orElse(null);
+
+        assertNotNull(found);
+        assertEquals(productId, found.getId());
+        assertEquals("Laptop", found.getName());
+    }
+
+    @Test
+    public void testFindByIdNotFound() {
+        Product found = repository.findById("non-existent-id").orElse(null);
+        assertNull(found);
+    }
 }
