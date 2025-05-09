@@ -6,5 +6,7 @@ import java.util.Map;
 
 @Data
 public class TransactionRequestDTO {
-
+    private String customerId;
+    private Map<String, Integer> productQuantities;
+    private String paymentMethod;
 }
