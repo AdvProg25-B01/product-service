@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.productservice.controller;
 
 import id.ac.ui.cs.advprog.productservice.model.Payment;
-import id.ac.ui.cs.advprog.productservice.service.PaymentService;
+import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,15 +11,17 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    private final PaymentServiceImpl paymentService;
 
     @PostMapping
     public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
+        paymentService.createPayment(payment);
         URI location = URI.create("/payments/" + payment.getId());
         return ResponseEntity.created(location).build();
     }
