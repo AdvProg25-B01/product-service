@@ -4,8 +4,8 @@ import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 
 public class DeletePaymentCommand implements PaymentCommand {
 
-    private PaymentServiceImpl service;
-    private String paymentId;
+    private final PaymentServiceImpl service;
+    private final String paymentId;
 
     public DeletePaymentCommand(PaymentServiceImpl service, String paymentId) {
         this.service = service;
