@@ -29,6 +29,7 @@ public class ProductRepository {
     public void update(Product updatedProduct) {
         findByName(updatedProduct.getName()).ifPresent(p -> {
             p.setCategory(updatedProduct.getCategory());
+            p.setStock(updatedProduct.getStock());
             p.setPrice(updatedProduct.getPrice());
         });
     }

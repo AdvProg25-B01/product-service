@@ -19,7 +19,7 @@ public class ProductRepositoryTest {
 
     @Test
     public void testSaveProduct() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         repository.save(product);
 
         List<Product> products = repository.findAll();
@@ -29,8 +29,8 @@ public class ProductRepositoryTest {
 
     @Test
     public void testFindAllProducts() {
-        repository.save(new Product("Laptop", "Elektronik", 15000000.0));
-        repository.save(new Product("Buku", "Edukasi", 50000.0));
+        repository.save(new Product("Laptop", "Elektronik", 30, 15000000.0));
+        repository.save(new Product("Buku", "Edukasi", 10, 50000.0));
 
         List<Product> products = repository.findAll();
         assertEquals(2, products.size());
@@ -38,21 +38,22 @@ public class ProductRepositoryTest {
 
     @Test
     public void testUpdateProduct() {
-        Product original = new Product("Laptop", "Elektronik", 15000000.0);
+        Product original = new Product("Laptop", "Elektronik", 30, 15000000.0);
         repository.save(original);
 
-        Product updated = new Product("Laptop", "Gadget", 12000000.0);
+        Product updated = new Product("Laptop", "Gadget", 20, 12000000.0);
         repository.update(updated);
 
         Product found = repository.findByName("Laptop").orElse(null);
         assertNotNull(found);
         assertEquals("Gadget", found.getCategory());
+        assertEquals(20, found.getStock());
         assertEquals(12000000.0, found.getPrice());
     }
 
     @Test
     public void testDeleteProduct() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         repository.save(product);
 
         repository.delete("Laptop");
@@ -62,7 +63,7 @@ public class ProductRepositoryTest {
 
     @Test
     public void testConfirmBeforeSaveOrDelete() {
-        Product product = new Product("Laptop", "Elektronik", 15000000.0);
+        Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
 
         // Simulasi: user batal konfirmasi → tidak menyimpan
         // Tidak save ke repo
