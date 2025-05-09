@@ -26,10 +26,13 @@ public class ProductRepository {
                 .findFirst();
     }
 
-    public Optional<Product> findById(String id) {
-        return products.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst();
+    public Product findById(String id) {
+        for (Product product : products) {
+            if (product.getId().equals(id)) {
+                return product;
+            }
+        }
+        return null;
     }
 
     public void update(Product updatedProduct) {

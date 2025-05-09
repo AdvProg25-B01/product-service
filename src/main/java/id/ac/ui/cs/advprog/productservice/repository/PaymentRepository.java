@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Repository
 public class PaymentRepository {
 
@@ -58,4 +59,5 @@ public class PaymentRepository {
     public void clear() {
         payments.clear();
     }
+
 }
