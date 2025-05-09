@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRe
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProductService {
@@ -38,6 +39,10 @@ public class ProductService {
         }
         repository.delete(name);
         return true;
+    }
+
+    public Optional<Product> getProductById(String id) {
+        return repository.findById(id);
     }
 
     public List<Product> getAllProducts() {
