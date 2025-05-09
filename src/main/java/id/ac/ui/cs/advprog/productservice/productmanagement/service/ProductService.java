@@ -41,7 +41,7 @@ public class ProductService {
         return true;
     }
 
-    public Optional<Product> getProductById(String id) {
+    public Product getProductById(String id) {
         return repository.findById(id);
     }
 
