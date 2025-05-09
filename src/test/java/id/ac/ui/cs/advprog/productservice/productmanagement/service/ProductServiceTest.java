@@ -98,7 +98,7 @@ public class ProductServiceTest {
         productService.addProduct(product, true);
 
         String id = product.getId();
-        Product found = productService.getProductById(id).orElse(null);
+        Product found = productService.getProductById(id);
 
         assertNotNull(found);
         assertEquals(id, found.getId());
@@ -107,7 +107,7 @@ public class ProductServiceTest {
 
     @Test
     public void testGetProductByIdNotFound() {
-        Product found = productService.getProductById("non-existent-id").orElse(null);
+        Product found = productService.getProductById("non-existent-id");
         assertNull(found);
     }
 }

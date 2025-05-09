@@ -85,22 +85,21 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testFindById() {
+    public void testFindByIdSuccess() {
         Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         repository.save(product);
 
-        String productId = product.getId(); // UUID generated internally
-
-        Product found = repository.findById(productId).orElse(null);
+        String id = product.getId();
+        Product found = repository.findById(id);
 
         assertNotNull(found);
-        assertEquals(productId, found.getId());
+        assertEquals(id, found.getId());
         assertEquals("Laptop", found.getName());
     }
 
     @Test
     public void testFindByIdNotFound() {
-        Product found = repository.findById("non-existent-id").orElse(null);
+        Product found = repository.findById("non-existent-id");
         assertNull(found);
     }
 }
