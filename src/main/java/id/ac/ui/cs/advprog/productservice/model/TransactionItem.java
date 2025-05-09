@@ -14,8 +14,13 @@ public class TransactionItem {
     private Transaction transaction;
 
     public TransactionItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+        this.subtotal = product.getPrice() * quantity;
     }
 
     public void updateQuantity(int newQuantity) {
+        this.quantity = newQuantity;
+        this.subtotal = product.getPrice() * quantity;
     }
 }
