@@ -24,9 +24,10 @@ public class ProductController {
             Product product = ProductFactory.createProduct(
                     incomingProduct.getName(),
                     incomingProduct.getCategory(),
+                    incomingProduct.getStock(),
                     incomingProduct.getPrice()
             );
-            boolean success = productService.addProduct(product, true); // Change false to true
+            boolean success = productService.addProduct(product, true);
             if (!success) {
                 return ResponseEntity.badRequest().body("Product is invalid or could not be created");
             }
@@ -54,6 +55,23 @@ public class ProductController {
 
         if (product == null) {
             return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(product);
+    }
+
+    // Get a product by ID
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getProductById(@PathVariable String id) {
+        List<Product> products = productService.getAllProducts();
+        Product product = products.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+
+        if (product == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Product with ID '" + id + "' not found");
         }
 
         return ResponseEntity.ok(product);

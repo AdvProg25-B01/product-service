@@ -41,7 +41,7 @@ public class ProductControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(productController).build();
-        product = new Product("Laptop", "Elektronik", 15000000.0);
+        product = new Product("Laptop", "Elektronik", 30,15000000.0);
     }
 
     // Test for Creating Product Success
@@ -51,10 +51,11 @@ public class ProductControllerTest {
 
         mockMvc.perform(post("/product/create")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"price\":15000000.0}"))
+                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"stock\":30,\"price\":15000000.0}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Laptop"))
                 .andExpect(jsonPath("$.category").value("Elektronik"))
+                .andExpect(jsonPath("$.stock").value(30))
                 .andExpect(jsonPath("$.price").value(15000000.0));
     }
 
@@ -65,7 +66,7 @@ public class ProductControllerTest {
 
         mockMvc.perform(post("/product/create")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"price\":15000000.0}"))
+                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"stock\":30,\"price\":15000000.0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Product is invalid or could not be created"));
     }
@@ -81,6 +82,7 @@ public class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Laptop"))
                 .andExpect(jsonPath("$[0].category").value("Elektronik"))
+                .andExpect(jsonPath("$[0].stock").value(30))
                 .andExpect(jsonPath("$[0].price").value(15000000.0));
     }
 
@@ -94,6 +96,7 @@ public class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Laptop"))
                 .andExpect(jsonPath("$.category").value("Elektronik"))
+                .andExpect(jsonPath("$.stock").value(30))
                 .andExpect(jsonPath("$.price").value(15000000.0));
     }
 
@@ -114,10 +117,11 @@ public class ProductControllerTest {
 
         mockMvc.perform(put("/product/edit/Laptop")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"price\":14000000.0}"))
+                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"stock\":20,\"price\":14000000.0}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Laptop"))
                 .andExpect(jsonPath("$.category").value("Gadget"))
+                .andExpect(jsonPath("$.stock").value(20))
                 .andExpect(jsonPath("$.price").value(14000000.0));
     }
 
@@ -128,7 +132,7 @@ public class ProductControllerTest {
 
         mockMvc.perform(put("/product/edit/Laptop")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"price\":14000000.0}"))
+                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"stock\":20,\"price\":14000000.0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Edit failed. Product could not be updated."));
     }
@@ -160,8 +164,34 @@ public class ProductControllerTest {
         // price = 0 will trigger IllegalArgumentException from factory
         mockMvc.perform(post("/product/create")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"\",\"category\":\"\",\"price\":0.0}"))
+                        .content("{\"name\":\"\",\"category\":\"\",\"stock\":0,\"price\":0.0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Product is invalid or could not be created")); // Update this line
+    }
+
+    @Test
+    void testGetProductByIdSuccess() throws Exception {
+        // Make sure product has an ID
+        String productId = product.getId(); // auto-generated UUID
+        when(productService.getAllProducts()).thenReturn(List.of(product));
+
+        mockMvc.perform(get("/product/id/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.name").value("Laptop"))
+                .andExpect(jsonPath("$.category").value("Elektronik"))
+                .andExpect(jsonPath("$.stock").value(30))
+                .andExpect(jsonPath("$.price").value(15000000.0));
+    }
+
+    @Test
+    void testGetProductByIdNotFound() throws Exception {
+        when(productService.getAllProducts()).thenReturn(List.of(product));
+
+        mockMvc.perform(get("/product/id/nonexistent-id")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Product with ID 'nonexistent-id' not found"));
     }
 }
