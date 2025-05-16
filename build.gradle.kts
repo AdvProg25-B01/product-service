@@ -5,6 +5,15 @@ plugins {
     jacoco
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.sonarqube") version "4.3.1.3277"
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "AdvProg25-B01_product-service")
+        property("sonar.organization", "advprog25-b01")
+        property("sonar.host.url", "https://sonarcloud.io")
+    }
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -48,21 +57,37 @@ dependencies {
     testImplementation("io.github.bonigarcia:selenium-jupiter:$seleniumJupiterVersion")
     testImplementation("io.github.bonigarcia:webdrivermanager:$webdrivermanagerVersion")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    runtimeOnly("org.postgresql:postgresql")
+    testImplementation("com.h2database:h2:2.2.220")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2")
 }
 
+// Register unitTest task (explicit classpath + testClassesDirs)
 tasks.register<Test>("unitTest") {
     description = "Runs unit tests."
     group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform()
 
     filter {
         excludeTestsMatching("*FunctionalTest")
     }
 }
 
+// Register functionalTest task
 tasks.register<Test>("functionalTest") {
     description = "Runs functional tests."
     group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform()
 
     filter {
         includeTestsMatching("*FunctionalTest")
