@@ -10,6 +10,6 @@
 
 > Raja Rafael Pangihutan Sitorus - 2306244923
 ### Component Diagram
-![Screenshot 2025-05-16 at 18.32.54.png](assets/img/Screenshot 2025-05-16 at 18.32.54.png)
+![Screenshot 2025-05-16 at 18.32.54.png](assets/img/Raja_Component_Diagram.png)
 ### Code Diagram
-![Screenshot 2025-05-16 at 18.28.10.png](assets/img/Screenshot 2025-05-16 at 18.28.10.png)
+![Screenshot 2025-05-16 at 18.28.10.png](assets/img/Raja_Code_Diagram.png)
