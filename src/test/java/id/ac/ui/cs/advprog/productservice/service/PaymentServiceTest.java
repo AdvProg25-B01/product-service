@@ -14,6 +14,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -41,7 +42,7 @@ class PaymentServiceTest {
 
     @Test
     void testGetPaymentById_success() {
-        when(paymentRepository.findById("p1")).thenReturn(payment);
+        when(paymentRepository.findById("p1")).thenReturn(Optional.of(payment));
 
         Payment result = paymentService.getPaymentById("p1");
         assertEquals(payment, result);
@@ -58,16 +59,16 @@ class PaymentServiceTest {
 
     @Test
     void testUpdatePaymentStatus_success() {
-        when(paymentRepository.findById("p1")).thenReturn(payment);
+        when(paymentRepository.findById("p1")).thenReturn(Optional.of(payment));
 
-        assertDoesNotThrow(() -> paymentService.updatePaymentStatus("p1", "PAID"));
-        assertEquals("PAID", payment.getStatus());
+        assertDoesNotThrow(() -> paymentService.updatePaymentStatus("p1", "LUNAS"));
+        assertEquals("LUNAS", payment.getStatus());
     }
 
     @Test
     void testDeletePayment_success() {
-        when(paymentRepository.findById("p1")).thenReturn(payment);
-        when(paymentRepository.delete(payment)).thenReturn(true);
+        when(paymentRepository.findById("p1")).thenReturn(Optional.of(payment));
+        doNothing().when(paymentRepository).delete(payment);
 
         assertDoesNotThrow(() -> paymentService.deletePayment("p1"));
         verify(paymentRepository).delete(payment);
@@ -76,22 +77,22 @@ class PaymentServiceTest {
 
     @Test
     void testGetPaymentById_notFound() {
-        when(paymentRepository.findById("invalid")).thenReturn(null);
-
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            paymentService.getPaymentById("invalid");
+        String invalidId = "invalid";
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            paymentService.getPaymentById(invalidId);
         });
-        assertEquals("Payment not found", exception.getMessage());
+        assertEquals("Payment not found with id: " + invalidId, exception.getMessage());
     }
 
     @Test
     void testUpdatePaymentStatus_notFound() {
-        when(paymentRepository.findById("invalid")).thenReturn(null);
+        String invalidId = "invalid";
+        when(paymentRepository.findById("invalid")).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(RuntimeException.class, () -> {
-            paymentService.updatePaymentStatus("invalid", "PAID");
+            paymentService.updatePaymentStatus("invalid", "LUNAS");
         });
-        assertEquals("Payment not found", exception.getMessage());
+        assertEquals("Payment not found with id: " + invalidId, exception.getMessage());
     }
 
     @Test
@@ -102,7 +103,7 @@ class PaymentServiceTest {
             paymentService.deletePayment(invalidPaymentId);
         });
 
-        assertEquals("Payment with ID " + invalidPaymentId + " not found", exception.getMessage());
+        assertEquals("Payment not found with id: invalid", exception.getMessage());
     }
 
     @Test
@@ -114,6 +115,6 @@ class PaymentServiceTest {
         });
 
         assertNotNull(exception);
-        assertEquals("Payment with ID " + nonExistentPaymentId + " not found", exception.getMessage());
+        assertEquals("Payment not found with id: " + nonExistentPaymentId, exception.getMessage());
     }
 }

@@ -17,17 +17,15 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void createPayment(Payment payment) {
-        repository.save(payment);
+    public Payment createPayment(Payment payment) {
+        payment.setId(null);
+        return repository.save(payment);
     }
 
     @Override
     public Payment getPaymentById(String paymentId) {
-        Payment payment = repository.findById(paymentId);
-        if (payment == null) {
-            throw new RuntimeException("Payment not found");
-        }
-        return payment;
+        return repository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + paymentId));
     }
 
     @Override
@@ -37,21 +35,16 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void updatePaymentStatus(String paymentId, String status) {
-        Payment payment = repository.findById(paymentId);
-        if (payment == null) {
-            throw new RuntimeException("Payment not found");
-        }
+        Payment payment = repository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + paymentId));
         payment.setStatus(status);
-        repository.update(payment);
+        repository.save(payment);
     }
 
     @Override
     public void deletePayment(String paymentId) {
-        Payment payment = repository.findById(paymentId);
-        if (payment == null) {
-            throw new RuntimeException("Payment with ID " + paymentId + " not found");
-        }
+        Payment payment = repository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + paymentId));
         repository.delete(payment);
     }
-
 }

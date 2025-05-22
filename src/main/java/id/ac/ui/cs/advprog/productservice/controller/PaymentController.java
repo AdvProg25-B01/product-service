@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.productservice.controller;
 
 import id.ac.ui.cs.advprog.productservice.model.Payment;
+import id.ac.ui.cs.advprog.productservice.service.PaymentService;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 import id.ac.ui.cs.advprog.productservice.model.command.CreatePaymentCommand;
 import id.ac.ui.cs.advprog.productservice.model.command.DeletePaymentCommand;
@@ -24,11 +25,17 @@ public class PaymentController {
     private final PaymentServiceImpl paymentService;
 
     @PostMapping
-    public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
-        PaymentCommand command = new CreatePaymentCommand(paymentService, payment);
-        command.execute();
-        URI location = URI.create("/payments/" + payment.getId());
-        return ResponseEntity.created(location).build();
+     public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
+         CreatePaymentCommand command = new CreatePaymentCommand(paymentService, payment);
+         command.execute();
+         Payment createdPayment = command.getResult();
+
+         if (createdPayment == null || createdPayment.getId() == null) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+         }
+
+         URI location = URI.create("/payments/" + createdPayment.getId());
+         return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/customer/{customerId}")
