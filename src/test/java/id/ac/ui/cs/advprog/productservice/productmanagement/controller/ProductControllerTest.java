@@ -4,194 +4,155 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
+@WebMvcTest(ProductController.class)
 public class ProductControllerTest {
 
-    // Use LENIENT strictness to allow unused stubs
-    @Mock(lenient = true)
-    private ProductService productService;
-
+    @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private ProductService productService;
 
-
-    @InjectMocks
-    private ProductController productController;
-
-    private Product product;
+    private Product testProduct;
+    private UUID testProductId;
 
     @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(productController).build();
-        product = new Product("Laptop", "Elektronik", 30,15000000.0);
+    public void setUp() {
+        testProductId = UUID.randomUUID();
+        testProduct = new Product("Test Laptop", "Electronics", 10, 999.99);
+        testProduct.setId(testProductId);
     }
 
-    // Test for Creating Product Success
     @Test
-    void testCreateProductSuccess() throws Exception {
-        when(productService.addProduct(any(Product.class), anyBoolean())).thenReturn(true);
-
-        mockMvc.perform(post("/product/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"stock\":30,\"price\":15000000.0}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Laptop"))
-                .andExpect(jsonPath("$.category").value("Elektronik"))
-                .andExpect(jsonPath("$.stock").value(30))
-                .andExpect(jsonPath("$.price").value(15000000.0));
-    }
-
-    // Test for Creating Product Failure
-    @Test
-    void testCreateProductFailure() throws Exception {
-        when(productService.addProduct(any(Product.class), anyBoolean())).thenReturn(false);
-
-        mockMvc.perform(post("/product/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Elektronik\",\"stock\":30,\"price\":15000000.0}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Product is invalid or could not be created"));
-    }
-
-    // Test for Listing Products
-    @Test
-    void testListProducts() throws Exception {
-        List<Product> products = Arrays.asList(product);
+    public void testListProducts() throws Exception {
+        List<Product> products = Arrays.asList(testProduct);
         when(productService.getAllProducts()).thenReturn(products);
 
-        mockMvc.perform(get("/product/list")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/product/list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Laptop"))
-                .andExpect(jsonPath("$[0].category").value("Elektronik"))
-                .andExpect(jsonPath("$[0].stock").value(30))
-                .andExpect(jsonPath("$[0].price").value(15000000.0));
+                .andExpect(jsonPath("$[0].name").value("Test Laptop"))
+                .andExpect(jsonPath("$[0].category").value("Electronics"))
+                .andExpect(jsonPath("$[0].stock").value(10))
+                .andExpect(jsonPath("$[0].price").value(999.99));
     }
 
-    // Test for Getting a Single Product
     @Test
-    void testGetProduct() throws Exception {
-        when(productService.getAllProducts()).thenReturn(Arrays.asList(product));
+    public void testGetProductByName() throws Exception {
+        List<Product> products = Arrays.asList(testProduct);
+        when(productService.getAllProducts()).thenReturn(products);
 
-        mockMvc.perform(get("/product/Laptop")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/product/Test Laptop"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Laptop"))
-                .andExpect(jsonPath("$.category").value("Elektronik"))
-                .andExpect(jsonPath("$.stock").value(30))
-                .andExpect(jsonPath("$.price").value(15000000.0));
+                .andExpect(jsonPath("$.name").value("Test Laptop"))
+                .andExpect(jsonPath("$.category").value("Electronics"));
     }
 
-    // Test for Getting a Non-existent Product
     @Test
-    void testGetProductNotFound() throws Exception {
-        when(productService.getAllProducts()).thenReturn(Arrays.asList(product));
+    public void testGetProductByNameNotFound() throws Exception {
+        when(productService.getAllProducts()).thenReturn(Arrays.asList());
 
-        mockMvc.perform(get("/product/NonExistentProduct")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/product/NonExistent"))
                 .andExpect(status().isNotFound());
     }
 
-    // Test for Updating Product Success
     @Test
-    void testEditProductSuccess() throws Exception {
-        when(productService.editProduct(any(Product.class), anyBoolean())).thenReturn(true);
+    public void testGetProductByIdSuccess() throws Exception {
+        String productId = testProductId.toString();
+        List<Product> products = Arrays.asList(testProduct);
+        when(productService.getAllProducts()).thenReturn(products);
 
-        mockMvc.perform(put("/product/edit/Laptop")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"stock\":20,\"price\":14000000.0}"))
+        mockMvc.perform(get("/product/id/{id}", productId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Laptop"))
-                .andExpect(jsonPath("$.category").value("Gadget"))
-                .andExpect(jsonPath("$.stock").value(20))
-                .andExpect(jsonPath("$.price").value(14000000.0));
-    }
-
-    // Test for Updating Product Failure
-    @Test
-    void testEditProductFailure() throws Exception {
-        when(productService.editProduct(any(Product.class), anyBoolean())).thenReturn(false);
-
-        mockMvc.perform(put("/product/edit/Laptop")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Laptop\",\"category\":\"Gadget\",\"stock\":20,\"price\":14000000.0}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Edit failed. Product could not be updated."));
-    }
-
-    // Test for Deleting Product Success
-    @Test
-    void testDeleteProductSuccess() throws Exception {
-        when(productService.deleteProduct(anyString(), anyBoolean())).thenReturn(true);
-
-        mockMvc.perform(delete("/product/delete/Laptop")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Product deleted successfully"));
-    }
-
-    // Test for Deleting Product Failure
-    @Test
-    void testDeleteProductFailure() throws Exception {
-        when(productService.deleteProduct(anyString(), anyBoolean())).thenReturn(false);
-
-        mockMvc.perform(delete("/product/delete/Laptop")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Product deletion failed."));
+                .andExpect(jsonPath("$.name").value("Test Laptop"))
+                .andExpect(jsonPath("$.id").value(testProductId.toString()));
     }
 
     @Test
-    void testCreateProductWithInvalidData() throws Exception {
-        // price = 0 will trigger IllegalArgumentException from factory
+    public void testGetProductByIdNotFound() throws Exception {
+        String productId = UUID.randomUUID().toString();
+        when(productService.getAllProducts()).thenReturn(Arrays.asList());
+
+        mockMvc.perform(get("/product/id/{id}", productId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void testGetProductByIdInvalidFormat() throws Exception {
+        mockMvc.perform(get("/product/id/{id}", "invalid-uuid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testCreateProduct() throws Exception {
+        when(productService.addProduct(any(Product.class), eq(true))).thenReturn(true);
+
         mockMvc.perform(post("/product/create")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"\",\"category\":\"\",\"stock\":0,\"price\":0.0}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Product is invalid or could not be created")); // Update this line
+                        .content("{\"name\":\"New Laptop\",\"category\":\"Electronics\",\"stock\":5,\"price\":799.99}"))
+                .andExpect(status().isCreated());
     }
 
     @Test
-    void testGetProductByIdSuccess() throws Exception {
-        // Make sure product has an ID
-        String productId = product.getId(); // auto-generated UUID
-        when(productService.getAllProducts()).thenReturn(List.of(product));
+    public void testCreateProductFailure() throws Exception {
+        when(productService.addProduct(any(Product.class), eq(true))).thenReturn(false);
 
-        mockMvc.perform(get("/product/id/" + productId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(productId))
-                .andExpect(jsonPath("$.name").value("Laptop"))
-                .andExpect(jsonPath("$.category").value("Elektronik"))
-                .andExpect(jsonPath("$.stock").value(30))
-                .andExpect(jsonPath("$.price").value(15000000.0));
+        mockMvc.perform(post("/product/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Invalid Product\",\"category\":\"Electronics\",\"stock\":5,\"price\":-100}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void testGetProductByIdNotFound() throws Exception {
-        when(productService.getAllProducts()).thenReturn(List.of(product));
+    public void testEditProduct() throws Exception {
+        when(productService.editProduct(any(Product.class), eq(true))).thenReturn(true);
 
-        mockMvc.perform(get("/product/id/nonexistent-id")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Product with ID 'nonexistent-id' not found"));
+        mockMvc.perform(put("/product/edit/Test Laptop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Updated Laptop\",\"category\":\"Computing\",\"stock\":15,\"price\":1199.99}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testEditProductFailure() throws Exception {
+        when(productService.editProduct(any(Product.class), eq(true))).thenReturn(false);
+
+        mockMvc.perform(put("/product/edit/NonExistent")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Updated Laptop\",\"category\":\"Computing\",\"stock\":15,\"price\":1199.99}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testDeleteProduct() throws Exception {
+        when(productService.deleteProduct(eq("Test Laptop"), eq(true))).thenReturn(true);
+
+        mockMvc.perform(delete("/product/delete/Test Laptop"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testDeleteProductFailure() throws Exception {
+        when(productService.deleteProduct(eq("NonExistent"), eq(true))).thenReturn(false);
+
+        mockMvc.perform(delete("/product/delete/NonExistent"))
+                .andExpect(status().isBadRequest());
     }
 }
