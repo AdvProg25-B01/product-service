@@ -1,10 +1,16 @@
 package id.ac.ui.cs.advprog.productservice.model.command;
+import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
+import lombok.Getter;
+
+import java.util.List;
 
 public class ViewPaymentHistoryCommand implements PaymentCommand {
 
     private final PaymentServiceImpl service;
     private final String customerId;
+    @Getter
+    private List<Payment> result;
 
     public ViewPaymentHistoryCommand(PaymentServiceImpl service, String customerId) {
         this.service = service;
@@ -13,6 +19,7 @@ public class ViewPaymentHistoryCommand implements PaymentCommand {
 
     @Override
     public void execute() {
-        service.getPaymentsByCustomerId(customerId);
+        this.result = service.getPaymentsByCustomerId(customerId);
     }
+
 }

@@ -1,7 +1,12 @@
 package id.ac.ui.cs.advprog.productservice.controller;
 
 import id.ac.ui.cs.advprog.productservice.model.Payment;
+import id.ac.ui.cs.advprog.productservice.service.PaymentService;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
+import id.ac.ui.cs.advprog.productservice.model.command.CreatePaymentCommand;
+import id.ac.ui.cs.advprog.productservice.model.command.DeletePaymentCommand;
+import id.ac.ui.cs.advprog.productservice.model.command.ViewPaymentHistoryCommand;
+import id.ac.ui.cs.advprog.productservice.model.command.PaymentCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,16 +25,24 @@ public class PaymentController {
     private final PaymentServiceImpl paymentService;
 
     @PostMapping
-    public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
-        paymentService.createPayment(payment);
-        URI location = URI.create("/payments/" + payment.getId());
-        return ResponseEntity.created(location).build();
+     public ResponseEntity<Void> createPayment(@RequestBody Payment payment) {
+         CreatePaymentCommand command = new CreatePaymentCommand(paymentService, payment);
+         command.execute();
+         Payment createdPayment = command.getResult();
+
+         if (createdPayment == null || createdPayment.getId() == null) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+         }
+
+         URI location = URI.create("/payments/" + createdPayment.getId());
+         return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<Payment>> getPaymentsByCustomerId(@PathVariable String customerId) {
-        List<Payment> payments = paymentService.getPaymentsByCustomerId(customerId);
-        return ResponseEntity.ok(payments);
+        ViewPaymentHistoryCommand command = new ViewPaymentHistoryCommand(paymentService, customerId);
+        command.execute();
+        return ResponseEntity.ok(command.getResult());
     }
 
     @PutMapping("/{paymentId}/status")
@@ -51,7 +64,8 @@ public class PaymentController {
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<Void> deletePayment(@PathVariable String paymentId) {
         try {
-            paymentService.deletePayment(paymentId);
+            PaymentCommand command = new DeletePaymentCommand(paymentService, paymentId);
+            command.execute();
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             throw new RuntimeException("Delete failed", e);
