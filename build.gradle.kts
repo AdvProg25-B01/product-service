@@ -62,6 +62,11 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("com.h2database:h2:2.2.220")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    runtimeOnly("org.postgresql:postgresql:42.7.2")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("com.h2database:h2")
+    runtimeOnly("com.h2database:h2")
 }
 
 // Register unitTest task (explicit classpath + testClassesDirs)
@@ -96,6 +101,7 @@ tasks.register<Test>("functionalTest") {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    systemProperty("spring.profiles.active", "test") // Aktifkan profile test
 }
 
 tasks.test {
