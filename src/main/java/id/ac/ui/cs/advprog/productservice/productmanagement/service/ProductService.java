@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -29,7 +30,16 @@ public class ProductService {
         if (!confirmed) {
             return false;
         }
-        repository.update(updatedProduct);
+
+        Optional<Product> existing = repository.findById(updatedProduct.getId());
+        if (existing.isEmpty()) return false;
+
+        Product product = existing.get();
+        product.setCategory(updatedProduct.getCategory());
+        product.setStock(updatedProduct.getStock());
+        product.setPrice(updatedProduct.getPrice());
+
+        repository.save(product);
         return true;
     }
 
@@ -37,12 +47,23 @@ public class ProductService {
         if (!confirmed) {
             return false;
         }
-        repository.delete(name);
-        return true;
+
+        Optional<Product> productToDelete = repository.findByName(name);
+        if (productToDelete.isPresent()) {
+            repository.delete(productToDelete.get());
+            return true;
+        }
+        return false;
     }
 
-    public Product getProductById(String id) {
-        return repository.findById(id);
+    public Optional<Product> getProductById(String id) {
+        try {
+            UUID uuid = UUID.fromString(id);
+            return repository.findById(uuid);
+        } catch (IllegalArgumentException e) {
+            // Invalid UUID format
+            return Optional.empty();
+        }
     }
 
     public List<Product> getAllProducts() {

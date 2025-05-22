@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/product")
 public class ProductController {
@@ -63,18 +65,23 @@ public class ProductController {
     // Get a product by ID
     @GetMapping("/id/{id}")
     public ResponseEntity<?> getProductById(@PathVariable String id) {
-        List<Product> products = productService.getAllProducts();
-        Product product = products.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        try {
+            UUID uuid = UUID.fromString(id);
+            List<Product> products = productService.getAllProducts();
+            Product product = products.stream()
+                    .filter(p -> p.getId().equals(uuid))
+                    .findFirst()
+                    .orElse(null);
 
-        if (product == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Product with ID '" + id + "' not found");
+            if (product == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Product with ID '" + id + "' not found");
+            }
+
+            return ResponseEntity.ok(product);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid UUID format: " + id);
         }
-
-        return ResponseEntity.ok(product);
     }
 
     // Update an existing product
