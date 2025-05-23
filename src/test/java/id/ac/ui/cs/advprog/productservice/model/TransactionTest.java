@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,6 +58,7 @@ class TransactionTest {
         assertNotNull(transaction.getCreatedAt());
         assertNotNull(transaction.getUpdatedAt());
 
+        // 2 * 100.0 + 1 * 200.0 = 400.0
         assertEquals(400.0, transaction.getTotalAmount());
     }
 
@@ -68,6 +70,7 @@ class TransactionTest {
         TransactionItem item3 = new TransactionItem(product3, 3);
         transaction.addItem(item3);
 
+        // 400.0 + (3 * 150.0) = 850.0
         assertEquals(850.0, transaction.getTotalAmount());
     }
 
@@ -93,6 +96,7 @@ class TransactionTest {
         assertEquals(2, transaction.getItems().size());
         assertEquals(5, transaction.getItems().get(0).getQuantity());
 
+        // (5 * 100.0) + (1 * 200.0) = 700.0
         assertEquals(700.0, transaction.getTotalAmount());
     }
 
@@ -100,7 +104,7 @@ class TransactionTest {
     void testRemoveItem() {
         assertEquals(2, transaction.getItems().size());
 
-        transaction.removeItem(product1.getId());
+        transaction.removeItem(product1.getId().toString());
 
         assertEquals(1, transaction.getItems().size());
         assertEquals(product2.getId(), transaction.getItems().get(0).getProduct().getId());
@@ -112,10 +116,11 @@ class TransactionTest {
     void testUpdateItemQuantity_Increase() {
         assertEquals(2, transaction.getItems().get(0).getQuantity());
 
-        transaction.updateItemQuantity(product1.getId(), 4);
+        transaction.updateItemQuantity(product1.getId().toString(), 4);
 
         assertEquals(4, transaction.getItems().get(0).getQuantity());
 
+        // (4 * 100.0) + (1 * 200.0) = 600.0
         assertEquals(600.0, transaction.getTotalAmount());
     }
 
@@ -123,10 +128,11 @@ class TransactionTest {
     void testUpdateItemQuantity_Decrease() {
         assertEquals(2, transaction.getItems().get(0).getQuantity());
 
-        transaction.updateItemQuantity(product1.getId(), 1);
+        transaction.updateItemQuantity(product1.getId().toString(), 1);
 
         assertEquals(1, transaction.getItems().get(0).getQuantity());
 
+        // (1 * 100.0) + (1 * 200.0) = 300.0
         assertEquals(300.0, transaction.getTotalAmount());
     }
 
@@ -134,7 +140,7 @@ class TransactionTest {
     void testUpdateItemQuantity_ZeroOrNegative() {
         assertEquals(2, transaction.getItems().size());
 
-        transaction.updateItemQuantity(product1.getId(), 0);
+        transaction.updateItemQuantity(product1.getId().toString(), 0);
 
         assertEquals(1, transaction.getItems().size());
         assertEquals(product2.getId(), transaction.getItems().get(0).getProduct().getId());
@@ -166,6 +172,7 @@ class TransactionTest {
 
         transaction.complete();
 
+        // Should remain IN_PROGRESS since complete() only works from PENDING
         assertEquals(TransactionStatus.IN_PROGRESS, transaction.getStatus());
 
         assertEquals(initialUpdate, transaction.getUpdatedAt());
@@ -195,6 +202,7 @@ class TransactionTest {
 
         transaction.markInProgress();
 
+        // Should remain COMPLETED since markInProgress() only works from PENDING
         assertEquals(TransactionStatus.COMPLETED, transaction.getStatus());
 
         assertEquals(initialUpdate, transaction.getUpdatedAt());
@@ -217,15 +225,21 @@ class TransactionTest {
     }
 
     @Test
-    void testCancel_AlreadyCancelled() {
+    void testCancel_AlreadyCancelled() throws InterruptedException {
         transaction.setStatus(TransactionStatus.CANCELLED);
 
         Date initialUpdate = transaction.getUpdatedAt();
+
+        // Add a small delay to ensure different timestamps
+        TimeUnit.MILLISECONDS.sleep(10);
 
         transaction.cancel();
 
         assertEquals(TransactionStatus.CANCELLED, transaction.getStatus());
 
+        // The cancel method updates the timestamp even if already cancelled
+        // based on the implementation: if (this.status != TransactionStatus.CANCELLED)
+        // Since it was already cancelled, the updatedAt should remain the same
         assertEquals(initialUpdate, transaction.getUpdatedAt());
     }
 

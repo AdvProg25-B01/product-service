@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.productservice.model;
 
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,16 +12,40 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Entity
+@Table(name = "transactions")
 public class Transaction {
+
+    @Id
+    @Column(name = "id", length = 36)
     private String id;
+
+    @Column(name = "customer_id", nullable = false)
     private String customerId;
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<TransactionItem> items = new ArrayList<>();
+
+    @Column(name = "total_amount", nullable = false)
     private double totalAmount;
+
+    @Column(name = "payment_method", nullable = false)
     private String paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private TransactionStatus status;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Date createdAt;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
     private Payment payment;
 
     public Transaction() {
@@ -34,7 +59,7 @@ public class Transaction {
                        String paymentMethod, TransactionStatus status) {
         this.id = id;
         this.customerId = customerId;
-        this.items = items;
+        this.items = items != null ? items : new ArrayList<>();
         this.paymentMethod = paymentMethod;
         this.status = status;
         this.createdAt = new Date();
@@ -54,18 +79,19 @@ public class Transaction {
                 return;
             }
         }
+        item.setTransaction(this); // Set bidirectional relationship
         items.add(item);
         calculateTotalAmount();
     }
 
     public void removeItem(String productId) {
-        items.removeIf(item -> item.getProduct().getId().equals(productId));
+        items.removeIf(item -> item.getProduct().getId().equals(UUID.fromString(productId)));
         calculateTotalAmount();
     }
 
     public void updateItemQuantity(String productId, int newQuantity) {
         for (TransactionItem item : items) {
-            if (item.getProduct().getId().equals(productId)) {
+            if (item.getProduct().getId().equals(UUID.fromString(productId))) {
                 if (newQuantity <= 0) {
                     removeItem(productId);
                 } else {
@@ -96,5 +122,18 @@ public class Transaction {
             this.status = TransactionStatus.CANCELLED;
             this.updatedAt = new Date();
         }
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = new Date();
+        }
+        updatedAt = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
     }
 }

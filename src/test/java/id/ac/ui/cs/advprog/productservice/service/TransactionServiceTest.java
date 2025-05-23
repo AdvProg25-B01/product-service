@@ -53,8 +53,8 @@ class TransactionServiceTest {
         product1 = spy(new Product("Product 1", "Category 1", 10, 100.0));
         product2 = spy(new Product("Product 2", "Category 2", 20, 200.0));
 
-        when(product1.getId()).thenReturn("product-1-id");
-        when(product2.getId()).thenReturn("product-2-id");
+        when(product1.getId()).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
+        when(product2.getId()).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440002"));
 
         transactionId = "test-transaction-id";
         customerId = "test-customer-id";
@@ -76,8 +76,8 @@ class TransactionServiceTest {
         }
         transaction.calculateTotalAmount();
 
-        when(productService.getProductById("product-1-id")).thenReturn(product1);
-        when(productService.getProductById("product-2-id")).thenReturn(product2);
+        when(productService.getProductById("550e8400-e29b-41d4-a716-446655440001")).thenReturn(Optional.of(product1));
+        when(productService.getProductById("550e8400-e29b-41d4-a716-446655440002")).thenReturn(Optional.of(product2));
 
         when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(transaction));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
@@ -88,14 +88,17 @@ class TransactionServiceTest {
         when(transactionRepository.findByStatus(TransactionStatus.PENDING)).thenReturn(transactionList);
         when(transactionRepository.findByPaymentMethod("CASH")).thenReturn(transactionList);
         when(transactionRepository.findByDateRange(any(Date.class), any(Date.class))).thenReturn(transactionList);
+        when(transactionRepository.searchByKeyword("test")).thenReturn(transactionList);
+        when(transactionRepository.findOngoingTransactions()).thenReturn(transactionList);
+        when(transactionRepository.findTransactionsWithFilters(any(), any(), any(), any(), any())).thenReturn(transactionList);
 
         requestDTO = new TransactionRequestDTO();
         requestDTO.setCustomerId(customerId);
         requestDTO.setPaymentMethod("CASH");
 
         Map<String, Integer> productQuantities = new HashMap<>();
-        productQuantities.put("product-1-id", 2);
-        productQuantities.put("product-2-id", 1);
+        productQuantities.put("550e8400-e29b-41d4-a716-446655440001", 2);
+        productQuantities.put("550e8400-e29b-41d4-a716-446655440002", 1);
         requestDTO.setProductQuantities(productQuantities);
 
         updateDTO = new TransactionUpdateDTO();
@@ -103,7 +106,7 @@ class TransactionServiceTest {
         updateDTO.setPaymentMethod("CARD");
 
         Map<String, Integer> updatedQuantities = new HashMap<>();
-        updatedQuantities.put("product-1-id", 3);
+        updatedQuantities.put("550e8400-e29b-41d4-a716-446655440001", 3);
         updateDTO.setProductQuantities(updatedQuantities);
     }
 
@@ -116,8 +119,8 @@ class TransactionServiceTest {
         assertEquals("CASH", result.getPaymentMethod());
         assertEquals(TransactionStatus.PENDING, result.getStatus());
 
-        verify(productService, times(1)).getProductById("product-1-id");
-        verify(productService, times(1)).getProductById("product-2-id");
+        verify(productService, times(1)).getProductById("550e8400-e29b-41d4-a716-446655440001");
+        verify(productService, times(1)).getProductById("550e8400-e29b-41d4-a716-446655440002");
         verify(productService, times(2)).editProduct(any(Product.class), eq(true));
 
         verify(transactionRepository).save(any(Transaction.class));
@@ -131,12 +134,12 @@ class TransactionServiceTest {
 
     @Test
     void createTransaction_ProductNotFound() {
-        when(productService.getProductById("non-existent-product")).thenReturn(null);
+        when(productService.getProductById("non-existent-product")).thenReturn(Optional.empty());
         Map<String, Integer> productQuantities = new HashMap<>();
         productQuantities.put("non-existent-product", 1);
         requestDTO.setProductQuantities(productQuantities);
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(NoSuchElementException.class, () -> {
             transactionService.createTransaction(requestDTO);
         });
 
@@ -149,7 +152,7 @@ class TransactionServiceTest {
         when(product1.getStock()).thenReturn(1);
 
         Map<String, Integer> productQuantities = new HashMap<>();
-        productQuantities.put("product-1-id", 2);
+        productQuantities.put("550e8400-e29b-41d4-a716-446655440001", 2);
         requestDTO.setProductQuantities(productQuantities);
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
@@ -366,7 +369,7 @@ class TransactionServiceTest {
         transactionService.deleteTransaction(transactionId);
 
         verify(transactionRepository).findById(transactionId);
-        verify(transactionRepository).delete(transactionId);
+        verify(transactionRepository).deleteById(transactionId);
 
         verify(productService, atLeastOnce()).editProduct(any(Product.class), eq(true));
     }
@@ -389,7 +392,7 @@ class TransactionServiceTest {
         transactionService.deleteTransaction(transactionId);
 
         verify(transactionRepository).findById(transactionId);
-        verify(transactionRepository).delete(transactionId);
+        verify(transactionRepository).deleteById(transactionId);
 
         verify(productService, never()).editProduct(any(Product.class), eq(true));
     }
@@ -401,7 +404,7 @@ class TransactionServiceTest {
         assertNotNull(results);
         assertEquals(1, results.size());
 
-        verify(transactionRepository).findAll();
+        verify(transactionRepository).searchByKeyword("test");
     }
 
     @Test
@@ -426,15 +429,10 @@ class TransactionServiceTest {
         inProgressTransaction.setId("in-progress-id");
         inProgressTransaction.setStatus(TransactionStatus.IN_PROGRESS);
 
-        Transaction completedTransaction = new Transaction();
-        completedTransaction.setId("completed-id");
-        completedTransaction.setStatus(TransactionStatus.COMPLETED);
-
         allTransactions.add(pendingTransaction);
         allTransactions.add(inProgressTransaction);
-        allTransactions.add(completedTransaction);
 
-        when(transactionRepository.findAll()).thenReturn(allTransactions);
+        when(transactionRepository.findOngoingTransactions()).thenReturn(allTransactions);
 
         List<TransactionDTO> results = transactionService.getOngoingTransactions();
 
@@ -447,7 +445,6 @@ class TransactionServiceTest {
         }
         assertTrue(includedIds.contains("pending-id"));
         assertTrue(includedIds.contains("in-progress-id"));
-        assertFalse(includedIds.contains("completed-id"));
     }
 
     @Test
@@ -471,26 +468,24 @@ class TransactionServiceTest {
         matchingTransaction.setStatus(TransactionStatus.PENDING);
         matchingTransaction.setCreatedAt(middleDate);
 
-        Transaction nonMatchingTransaction = new Transaction();
-        nonMatchingTransaction.setId("non-matching-transaction");
-        nonMatchingTransaction.setCustomerId("customer-2");
-        nonMatchingTransaction.setPaymentMethod("CASH");
-        nonMatchingTransaction.setStatus(TransactionStatus.PENDING);
-        nonMatchingTransaction.setCreatedAt(middleDate);
-
         testTransactions.add(matchingTransaction);
-        testTransactions.add(nonMatchingTransaction);
 
-        when(transactionRepository.findAll()).thenReturn(testTransactions);
+        when(transactionRepository.findTransactionsWithFilters(
+                eq("customer-1"),
+                eq(Collections.singletonList(TransactionStatus.PENDING)),
+                eq(Collections.singletonList("CASH")),
+                eq(startDate),
+                eq(endDate)
+        )).thenReturn(testTransactions);
 
         List<TransactionDTO> results = transactionService.filterTransactions(
-                "customer-1",                                         // customerId
-                Collections.singletonList(TransactionStatus.PENDING), // statuses
-                Collections.singletonList("CASH"),                    // paymentMethods
-                startDate,                                            // startDate
-                endDate,                                              // endDate
-                "createdAt",                                          // sortBy
-                "desc"                                                // sortDirection
+                "customer-1",
+                Collections.singletonList(TransactionStatus.PENDING),
+                Collections.singletonList("CASH"),
+                startDate,
+                endDate,
+                "createdAt",
+                "desc"
         );
 
         assertNotNull(results);
@@ -542,13 +537,13 @@ class TransactionServiceTest {
     @Test
     void confirmTransaction_InsufficientStock() {
         Product lowStockProduct = spy(new Product("Low Stock Product", "Category", 1, 100.0));
-        when(lowStockProduct.getId()).thenReturn("low-stock-id");
+        when(lowStockProduct.getId()).thenReturn(UUID.fromString("550e8400-e29b-41d4-a716-446655440003"));
         when(lowStockProduct.getStock()).thenReturn(1);
 
         TransactionItem insufficientItem = new TransactionItem(lowStockProduct, 5);
         transaction.addItem(insufficientItem);
 
-        when(productService.getProductById("low-stock-id")).thenReturn(lowStockProduct);
+        when(productService.getProductById("550e8400-e29b-41d4-a716-446655440003")).thenReturn(Optional.of(lowStockProduct));
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             transactionService.confirmTransaction(transactionId);
@@ -572,7 +567,7 @@ class TransactionServiceTest {
         assertFalse(stockStatus.isEmpty());
 
         Map<String, Object> productStatus = stockStatus.get(0);
-        assertEquals(product1.getId(), productStatus.get("productId"));
+        assertEquals(product1.getId().toString(), productStatus.get("productId"));
         assertEquals(product1.getName(), productStatus.get("productName"));
         assertEquals(2, productStatus.get("quantityInTransaction"));
 
@@ -688,27 +683,30 @@ class TransactionServiceTest {
         try {
             Field idField = Product.class.getDeclaredField("id");
             idField.setAccessible(true);
-            idField.set(realProduct, "product-1-id");
+            idField.set(realProduct, UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
         } catch (Exception e) {
             fail("Failed to set id field: " + e.getMessage());
         }
 
-        // Now invoke the method using reflection
         String result = invokeGetProductId(realProduct);
 
-        assertEquals("product-1-id", result);
+        assertEquals("550e8400-e29b-41d4-a716-446655440001", result);
     }
 
     @Test
     void getProductId_ExceptionHandling() {
         Product problematicProduct = new Product("Problem Product", "Category", 10, 100.0) {
+            @Override
+            public UUID getId() {
+                throw new RuntimeException("Simulated failure");
+            }
         };
 
-        // Call the method
         String result = invokeGetProductId(problematicProduct);
 
         assertNotNull(result);
         assertTrue(result.startsWith("unknown-"),
                 "Result should start with 'unknown-' but was: " + result);
     }
+
 }
