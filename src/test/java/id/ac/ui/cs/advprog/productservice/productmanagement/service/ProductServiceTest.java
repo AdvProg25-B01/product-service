@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRe
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks; // New import
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -12,6 +13,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture; // New import
+import java.util.concurrent.ExecutionException; // New import
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,45 +26,47 @@ public class ProductServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @InjectMocks // Inject mocks into this instance
     private ProductService productService;
 
     @BeforeEach
     public void setUp() {
-        productService = new ProductService(productRepository);
+        // No manual instantiation needed here, @InjectMocks handles it
     }
 
     @Test
-    public void testAddProductSuccess() {
+    public void testAddProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
+        when(productRepository.save(any(Product.class))).thenReturn(product); // Mock the save operation if needed
 
-        boolean result = productService.addProduct(product, true);
+        CompletableFuture<Boolean> futureResult = productService.addProduct(product, true);
 
-        assertTrue(result);
+        assertTrue(futureResult.get()); // Get the result from CompletableFuture
         verify(productRepository).save(product);
     }
 
     @Test
-    public void testAddProductNotConfirmed() {
+    public void testAddProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
 
-        boolean result = productService.addProduct(product, false);
+        CompletableFuture<Boolean> futureResult = productService.addProduct(product, false);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
         verify(productRepository, never()).save(any());
     }
 
     @Test
-    public void testAddProductInvalidPrice() {
+    public void testAddProductInvalidPrice() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, -100.0);
 
-        boolean result = productService.addProduct(product, true);
+        CompletableFuture<Boolean> futureResult = productService.addProduct(product, true);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
         verify(productRepository, never()).save(any());
     }
 
     @Test
-    public void testEditProductSuccess() {
+    public void testEditProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         UUID productId = UUID.randomUUID();
         Product existingProduct = new Product("Laptop", "Electronics", 10, 999.99);
         existingProduct.setId(productId);
@@ -70,10 +75,12 @@ public class ProductServiceTest {
         updatedProduct.setId(productId);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.save(any(Product.class))).thenReturn(existingProduct); // Mock the save
 
-        boolean result = productService.editProduct(updatedProduct, true);
+        CompletableFuture<Boolean> futureResult = productService.editProduct(updatedProduct, true);
 
-        assertTrue(result);
+        assertTrue(futureResult.get()); // Get the result from CompletableFuture
+        verify(productRepository).findById(productId);
         verify(productRepository).save(existingProduct);
         assertEquals("Computing", existingProduct.getCategory());
         assertEquals(15, existingProduct.getStock());
@@ -81,60 +88,65 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testEditProductNotConfirmed() {
+    public void testEditProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
         Product updatedProduct = new Product("Laptop", "Computing", 15, 1199.99);
 
-        boolean result = productService.editProduct(updatedProduct, false);
+        CompletableFuture<Boolean> futureResult = productService.editProduct(updatedProduct, false);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
         verify(productRepository, never()).findById(any());
         verify(productRepository, never()).save(any());
     }
 
     @Test
-    public void testEditProductNotFound() {
+    public void testEditProductNotFound() throws ExecutionException, InterruptedException { // Added throws
         UUID productId = UUID.randomUUID();
         Product updatedProduct = new Product("Laptop", "Computing", 15, 1199.99);
         updatedProduct.setId(productId);
 
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        boolean result = productService.editProduct(updatedProduct, true);
+        CompletableFuture<Boolean> futureResult = productService.editProduct(updatedProduct, true);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
+        verify(productRepository).findById(productId); // Verify findById was called
         verify(productRepository, never()).save(any());
     }
 
     @Test
-    public void testDeleteProductSuccess() {
+    public void testDeleteProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         when(productRepository.findByName("Laptop")).thenReturn(Optional.of(product));
+        doNothing().when(productRepository).delete(product); // Mock void method
 
-        boolean result = productService.deleteProduct("Laptop", true);
+        CompletableFuture<Boolean> futureResult = productService.deleteProduct("Laptop", true);
 
-        assertTrue(result);
+        assertTrue(futureResult.get()); // Get the result from CompletableFuture
+        verify(productRepository).findByName("Laptop");
         verify(productRepository).delete(product);
     }
 
     @Test
-    public void testDeleteProductNotConfirmed() {
-        boolean result = productService.deleteProduct("Laptop", false);
+    public void testDeleteProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
+        CompletableFuture<Boolean> futureResult = productService.deleteProduct("Laptop", false);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
         verify(productRepository, never()).findByName(any());
         verify(productRepository, never()).delete(any());
     }
 
     @Test
-    public void testDeleteProductNotFound() {
+    public void testDeleteProductNotFound() throws ExecutionException, InterruptedException { // Added throws
         when(productRepository.findByName("Laptop")).thenReturn(Optional.empty());
 
-        boolean result = productService.deleteProduct("Laptop", true);
+        CompletableFuture<Boolean> futureResult = productService.deleteProduct("Laptop", true);
 
-        assertFalse(result);
+        assertFalse(futureResult.get()); // Get the result from CompletableFuture
+        verify(productRepository).findByName("Laptop"); // Verify findByName was called
         verify(productRepository, never()).delete(any());
     }
 
+    // --- Synchronous methods tests remain unchanged ---
     @Test
     public void testGetProductByIdSuccess() {
         UUID productId = UUID.randomUUID();
@@ -152,7 +164,7 @@ public class ProductServiceTest {
         Optional<Product> result = productService.getProductById("invalid-uuid");
 
         assertTrue(result.isEmpty());
-        verify(productRepository, never()).findById(any());
+        verify(productRepository, never()).findById(any()); // No call made for invalid UUID
     }
 
     @Test
