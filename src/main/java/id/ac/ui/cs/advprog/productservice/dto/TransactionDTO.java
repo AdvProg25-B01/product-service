@@ -45,7 +45,7 @@ public class TransactionDTO {
 
         public static TransactionItemDTO fromTransactionItem(TransactionItem item) {
             TransactionItemDTO dto = new TransactionItemDTO();
-            dto.setProductId(item.getProduct().getId());
+            dto.setProductId(String.valueOf(item.getProduct().getId()));
             dto.setProductName(item.getProduct().getName());
             dto.setPrice(item.getProduct().getPrice());
             dto.setQuantity(item.getQuantity());
