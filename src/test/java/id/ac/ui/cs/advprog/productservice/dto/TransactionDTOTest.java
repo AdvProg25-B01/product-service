@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,7 +28,9 @@ class TransactionDTOTest {
         updatedAt = new Date(createdAt.getTime() + 3600000); // 1 hour later
 
         product1 = new Product("Product 1", "Category 1", 10, 100.0);
+        product1.setId(UUID.randomUUID());
         product2 = new Product("Product 2", "Category 2", 20, 200.0);
+        product2.setId(UUID.randomUUID());
 
         List<TransactionItem> items = new ArrayList<>();
         items.add(new TransactionItem(product1, 2));
@@ -71,14 +74,14 @@ class TransactionDTOTest {
         TransactionDTO dto = TransactionDTO.fromTransaction(transaction);
 
         TransactionDTO.TransactionItemDTO item1Dto = dto.getItems().get(0);
-        assertEquals(product1.getId(), item1Dto.getProductId());
+        assertEquals(product1.getId().toString(), item1Dto.getProductId());
         assertEquals("Product 1", item1Dto.getProductName());
         assertEquals(100.0, item1Dto.getPrice(), 0.001);
         assertEquals(2, item1Dto.getQuantity());
         assertEquals(200.0, item1Dto.getSubtotal(), 0.001);
 
         TransactionDTO.TransactionItemDTO item2Dto = dto.getItems().get(1);
-        assertEquals(product2.getId(), item2Dto.getProductId());
+        assertEquals(product2.getId().toString(), item2Dto.getProductId());
         assertEquals("Product 2", item2Dto.getProductName());
         assertEquals(200.0, item2Dto.getPrice(), 0.001);
         assertEquals(1, item2Dto.getQuantity());
@@ -91,7 +94,7 @@ class TransactionDTOTest {
 
         TransactionDTO.TransactionItemDTO dto = TransactionDTO.TransactionItemDTO.fromTransactionItem(item);
 
-        assertEquals(product1.getId(), dto.getProductId());
+        assertEquals(product1.getId().toString(), dto.getProductId());
         assertEquals("Product 1", dto.getProductName());
         assertEquals(100.0, dto.getPrice(), 0.001);
         assertEquals(3, dto.getQuantity());
