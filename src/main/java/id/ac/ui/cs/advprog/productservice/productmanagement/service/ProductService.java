@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.service;
 
-import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -57,13 +56,7 @@ public class ProductService {
     }
 
     public Optional<Product> getProductById(String id) {
-        try {
-            UUID uuid = UUID.fromString(id);
-            return repository.findById(uuid);
-        } catch (IllegalArgumentException e) {
-            // Invalid UUID format
-            return Optional.empty();
-        }
+        return repository.findById(UUID.fromString(id));
     }
 
     public List<Product> getAllProducts() {
