@@ -11,12 +11,13 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductServi
 import id.ac.ui.cs.advprog.productservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
+@Transactional
 public class TransactionServiceImpl implements TransactionService {
 
     private final ProductService productService;
@@ -30,55 +31,56 @@ public class TransactionServiceImpl implements TransactionService {
 
     private String getProductId(Product product) {
         try {
-            var field = product.getClass().getDeclaredField("id");
-            field.setAccessible(true);
-            return (String) field.get(product);
+            return product.getId().toString();
         } catch (Exception e) {
             return "unknown-" + System.identityHashCode(product);
         }
     }
 
     @Override
+    @Transactional
     public TransactionDTO createTransaction(TransactionRequestDTO requestDTO) {
         Transaction transaction = new Transaction();
-        transaction.setId(UUID.randomUUID().toString());
         transaction.setCustomerId(requestDTO.getCustomerId());
         transaction.setPaymentMethod(requestDTO.getPaymentMethod());
         transaction.setStatus(TransactionStatus.PENDING);
-        transaction.setCreatedAt(new Date());
-        transaction.setUpdatedAt(new Date());
 
         for (Map.Entry<String, Integer> entry : requestDTO.getProductQuantities().entrySet()) {
             String productId = entry.getKey();
             Integer quantity = entry.getValue();
             if (quantity <= 0) continue;
 
-            Product product = productService.getProductById(productId);
-            if (product == null) throw new IllegalArgumentException("Product not found: " + productId);
+            Product product = productService
+                    .getProductById(productId)
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Product not found: " + productId));
 
             if (product.getStock() < quantity)
                 throw new IllegalStateException("Not enough stock for product: " + product.getName());
 
-            transaction.addItem(new TransactionItem(product, quantity));
+            TransactionItem transactionItem = new TransactionItem(product, quantity);
+            transaction.addItem(transactionItem);
 
             product.setStock(product.getStock() - quantity);
             productService.editProduct(product, true);
         }
 
         transaction.calculateTotalAmount();
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TransactionDTO getTransactionById(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        return TransactionDTO.fromTransaction(transactionOpt.get());
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
+        return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getAllTransactions() {
         return transactionRepository.findAll().stream()
                 .map(TransactionDTO::fromTransaction)
@@ -86,6 +88,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByCustomerId(String customerId) {
         return transactionRepository.findByCustomerId(customerId).stream()
                 .map(TransactionDTO::fromTransaction)
@@ -93,6 +96,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByStatus(TransactionStatus status) {
         return transactionRepository.findByStatus(status).stream()
                 .map(TransactionDTO::fromTransaction)
@@ -100,6 +104,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByPaymentMethod(String paymentMethod) {
         return transactionRepository.findByPaymentMethod(paymentMethod).stream()
                 .map(TransactionDTO::fromTransaction)
@@ -107,6 +112,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByDateRange(Date start, Date end) {
         return transactionRepository.findByDateRange(start, end).stream()
                 .map(TransactionDTO::fromTransaction)
@@ -114,10 +120,10 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public TransactionDTO updateTransaction(String id, TransactionUpdateDTO updateDTO) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         if (transaction.getStatus() != TransactionStatus.PENDING &&
                 transaction.getStatus() != TransactionStatus.IN_PROGRESS)
@@ -143,12 +149,16 @@ public class TransactionServiceImpl implements TransactionService {
                 Integer quantity = entry.getValue();
 
                 if (quantity > 0) {
-                    Product product = productService.getProductById(productId);
-                    if (product == null) throw new IllegalArgumentException("Product not found: " + productId);
+                    Product product = productService
+                            .getProductById(productId)
+                            .orElseThrow(() -> new NoSuchElementException(
+                                    "Product not found: " + productId));
+
                     if (product.getStock() < quantity)
                         throw new IllegalStateException("Not enough stock for product: " + product.getName());
 
-                    transaction.addItem(new TransactionItem(product, quantity));
+                    TransactionItem transactionItem = new TransactionItem(product, quantity);
+                    transaction.addItem(transactionItem);
                     product.setStock(product.getStock() - quantity);
                     productService.editProduct(product, true);
                 }
@@ -157,32 +167,31 @@ public class TransactionServiceImpl implements TransactionService {
 
         transaction.calculateTotalAmount();
         transaction.setUpdatedAt(new Date());
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional
     public TransactionDTO completeTransaction(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         if (transaction.getStatus() != TransactionStatus.PENDING)
             throw new IllegalStateException("Cannot complete transaction with status: " + transaction.getStatus());
 
         transaction.complete();
-        transaction.setUpdatedAt(new Date());
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional
     public TransactionDTO cancelTransaction(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         if (transaction.getStatus() == TransactionStatus.CANCELLED)
             throw new IllegalStateException("Transaction is already cancelled");
@@ -194,17 +203,16 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         transaction.cancel();
-        transaction.setUpdatedAt(new Date());
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional
     public void deleteTransaction(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         if (transaction.getStatus() != TransactionStatus.CANCELLED) {
             for (TransactionItem item : transaction.getItems()) {
@@ -214,30 +222,30 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        transactionRepository.delete(id);
+        transactionRepository.deleteById(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> searchTransactions(String keyword) {
-        if (keyword == null || keyword.isEmpty()) return getAllTransactions();
+        if (keyword == null || keyword.isEmpty())
+            return getAllTransactions();
 
-        return transactionRepository.findAll().stream()
-                .filter(t -> t.getId().contains(keyword) ||
-                        (t.getCustomerId() != null && t.getCustomerId().contains(keyword)))
+        return transactionRepository.searchByKeyword(keyword).stream()
                 .map(TransactionDTO::fromTransaction)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> getOngoingTransactions() {
-        return transactionRepository.findAll().stream()
-                .filter(t -> t.getStatus() == TransactionStatus.PENDING ||
-                        t.getStatus() == TransactionStatus.IN_PROGRESS)
+        return transactionRepository.findOngoingTransactions().stream()
                 .map(TransactionDTO::fromTransaction)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDTO> filterTransactions(
             String customerId,
             List<TransactionStatus> statuses,
@@ -247,34 +255,15 @@ public class TransactionServiceImpl implements TransactionService {
             String sortBy,
             String sortDirection) {
 
-        Stream<Transaction> stream = transactionRepository.findAll().stream();
+        List<Transaction> transactions = transactionRepository.findTransactionsWithFilters(
+                customerId, statuses, paymentMethods, startDate, endDate);
 
-        if (customerId != null && !customerId.isEmpty()) {
-            stream = stream.filter(t -> customerId.equals(t.getCustomerId()));
-        }
-
-        if (statuses != null && !statuses.isEmpty()) {
-            stream = stream.filter(t -> statuses.contains(t.getStatus()));
-        }
-
-        if (paymentMethods != null && !paymentMethods.isEmpty()) {
-            stream = stream.filter(t -> paymentMethods.contains(t.getPaymentMethod()));
-        }
-
-        if (startDate != null) {
-            stream = stream.filter(t -> !t.getCreatedAt().before(startDate));
-        }
-
-        if (endDate != null) {
-            stream = stream.filter(t -> !t.getCreatedAt().after(endDate));
-        }
-
-        List<TransactionDTO> result = stream
+        List<TransactionDTO> result = transactions.stream()
                 .map(TransactionDTO::fromTransaction)
                 .collect(Collectors.toList());
 
         Comparator<TransactionDTO> comparator;
-        switch (sortBy.toLowerCase()) {
+        switch (sortBy != null ? sortBy.toLowerCase() : "createdat") {
             case "totalamount":
                 comparator = Comparator.comparing(TransactionDTO::getTotalAmount);
                 break;
@@ -294,49 +283,53 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         result.sort(comparator);
-
         return result;
     }
 
     @Override
+    @Transactional
     public TransactionDTO confirmTransaction(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         if (transaction.getStatus() != TransactionStatus.PENDING) {
             throw new IllegalStateException("Only pending transactions can be confirmed.");
         }
 
         for (TransactionItem item : transaction.getItems()) {
-            Product product = productService.getProductById(item.getProduct().getId());
+            Product product = productService
+                    .getProductById(item.getProduct().getId().toString())
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Product not found: " + item.getProduct().getId()));
             if (product.getStock() < item.getQuantity()) {
                 throw new IllegalStateException("Not enough stock for product: " + product.getName());
             }
         }
 
         transaction.markInProgress();
-        transaction.setUpdatedAt(new Date());
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, Object> getTransactionDetails(String id) {
-        Optional<Transaction> transactionOpt = transactionRepository.findById(id);
-        if (transactionOpt.isEmpty()) throw new NoSuchElementException("Transaction not found: " + id);
-        Transaction transaction = transactionOpt.get();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
 
         Map<String, Object> details = new HashMap<>();
-
         details.put("transaction", TransactionDTO.fromTransaction(transaction));
 
         List<Map<String, Object>> stockStatus = new ArrayList<>();
         for (TransactionItem item : transaction.getItems()) {
-            Product product = productService.getProductById(item.getProduct().getId());
+            Product product = productService
+                    .getProductById(item.getProduct().getId().toString())
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Product not found: " + item.getProduct().getId()));
+
             Map<String, Object> productStatus = new HashMap<>();
-            productStatus.put("productId", product.getId());
+            productStatus.put("productId", product.getId().toString());
             productStatus.put("productName", product.getName());
             productStatus.put("quantityInTransaction", item.getQuantity());
             productStatus.put("currentStock", product.getStock());
@@ -348,6 +341,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public int batchCompleteTransactions(List<String> transactionIds) {
         int completedCount = 0;
 
@@ -358,7 +352,6 @@ public class TransactionServiceImpl implements TransactionService {
                     Transaction transaction = transactionOpt.get();
                     if (transaction.getStatus() == TransactionStatus.PENDING) {
                         transaction.complete();
-                        transaction.setUpdatedAt(new Date());
                         transactionRepository.save(transaction);
                         completedCount++;
                     }
@@ -372,6 +365,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public int batchCancelTransactions(List<String> transactionIds) {
         int canceledCount = 0;
 
@@ -381,6 +375,7 @@ public class TransactionServiceImpl implements TransactionService {
                 if (transactionOpt.isPresent()) {
                     Transaction transaction = transactionOpt.get();
                     if (transaction.getStatus() != TransactionStatus.CANCELLED) {
+                        // Restore stock
                         for (TransactionItem item : transaction.getItems()) {
                             Product product = item.getProduct();
                             product.setStock(product.getStock() + item.getQuantity());
@@ -388,7 +383,6 @@ public class TransactionServiceImpl implements TransactionService {
                         }
 
                         transaction.cancel();
-                        transaction.setUpdatedAt(new Date());
                         transactionRepository.save(transaction);
                         canceledCount++;
                     }
