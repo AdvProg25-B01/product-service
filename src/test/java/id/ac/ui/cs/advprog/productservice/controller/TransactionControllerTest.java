@@ -16,9 +16,11 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -313,9 +315,11 @@ class TransactionControllerTest {
 
     @Test
     void getTransactionDetails_Success() throws Exception {
-        when(transactionService.getTransactionDetails(transactionId)).thenReturn(transactionDetails);
+        when(transactionService.getTransactionDetails(transactionId))
+                .thenReturn(CompletableFuture.completedFuture(transactionDetails));
 
-        mockMvc.perform(get("/api/transactions/{id}/details", transactionId))
+        mockMvc.perform(asyncDispatch(mockMvc.perform(get("/api/transactions/{id}/details", transactionId))
+                        .andReturn()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.transaction.id").value(transactionId))
                 .andExpect(jsonPath("$.stockStatus[0].productId").value("product-123"));
@@ -349,5 +353,39 @@ class TransactionControllerTest {
                 .andExpect(content().string("1"));
 
         verify(transactionService).batchCancelTransactions(anyList());
+    }
+
+    @Test
+    void completeMultipleTransactionsAsync_Success() throws Exception {
+        List<String> transactionIds = Collections.singletonList(transactionId);
+        when(transactionService.batchCompleteTransactionsAsync(anyList()))
+                .thenReturn(CompletableFuture.completedFuture(1));
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/transactions/batch/complete/async")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(transactionIds)))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+    }
+
+    @Test
+    void cancelMultipleTransactionsAsync_Success() throws Exception {
+        List<String> transactionIds = Collections.singletonList(transactionId);
+        when(transactionService.batchCancelTransactionsAsync(anyList()))
+                .thenReturn(CompletableFuture.completedFuture(1));
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/transactions/batch/cancel/async")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(transactionIds)))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
     }
 }

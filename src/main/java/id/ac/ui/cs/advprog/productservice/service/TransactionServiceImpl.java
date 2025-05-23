@@ -10,10 +10,15 @@ import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import id.ac.ui.cs.advprog.productservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,11 +27,17 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final ProductService productService;
     private final TransactionRepository transactionRepository;
+    private final Executor customTaskExecutor;
 
     @Autowired
-    public TransactionServiceImpl(ProductService productService, TransactionRepository transactionRepository) {
+    public TransactionServiceImpl(ProductService productService,
+                                  TransactionRepository transactionRepository,
+                                  @Qualifier("customTaskExecutor") Executor customTaskExecutor) {
         this.productService = productService;
         this.transactionRepository = transactionRepository;
+        this.customTaskExecutor = customTaskExecutor != null
+                ? customTaskExecutor
+                : ForkJoinPool.commonPool();;
     }
 
     private String getProductId(Product product) {
@@ -313,34 +324,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Map<String, Object> getTransactionDetails(String id) {
-        Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("transaction", TransactionDTO.fromTransaction(transaction));
-
-        List<Map<String, Object>> stockStatus = new ArrayList<>();
-        for (TransactionItem item : transaction.getItems()) {
-            Product product = productService
-                    .getProductById(item.getProduct().getId().toString())
-                    .orElseThrow(() -> new NoSuchElementException(
-                            "Product not found: " + item.getProduct().getId()));
-
-            Map<String, Object> productStatus = new HashMap<>();
-            productStatus.put("productId", product.getId().toString());
-            productStatus.put("productName", product.getName());
-            productStatus.put("quantityInTransaction", item.getQuantity());
-            productStatus.put("currentStock", product.getStock());
-            stockStatus.add(productStatus);
-        }
-        details.put("stockStatus", stockStatus);
-
-        return details;
-    }
-
-    @Override
     @Transactional
     public int batchCompleteTransactions(List<String> transactionIds) {
         int completedCount = 0;
@@ -393,5 +376,53 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         return canceledCount;
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<Integer> batchCompleteTransactionsAsync(List<String> transactionIds) {
+        int result = batchCompleteTransactions(transactionIds);
+        return CompletableFuture.completedFuture(result);
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<Integer> batchCancelTransactionsAsync(List<String> transactionIds) {
+        int result = batchCancelTransactions(transactionIds);
+        return CompletableFuture.completedFuture(result);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CompletableFuture<Map<String, Object>> getTransactionDetails(String id) {
+        return CompletableFuture.supplyAsync(() -> {
+            Transaction transaction = transactionRepository.findById(id)
+                    .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("transaction", TransactionDTO.fromTransaction(transaction));
+
+            List<CompletableFuture<Map<String, Object>>> futures = transaction.getItems().stream()
+                    .map(item -> CompletableFuture.supplyAsync(() -> {
+                        Product product = productService
+                                .getProductById(item.getProduct().getId().toString())
+                                .orElseThrow(() -> new NoSuchElementException(
+                                        "Product not found: " + item.getProduct().getId()));
+                        Map<String, Object> status = new HashMap<>();
+                        status.put("productId", product.getId().toString());
+                        status.put("productName", product.getName());
+                        status.put("quantityInTransaction", item.getQuantity());
+                        status.put("currentStock", product.getStock());
+                        return status;
+                    }, customTaskExecutor))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> stockStatus = futures.stream()
+                    .map(CompletableFuture::join)
+                    .collect(Collectors.toList());
+
+            details.put("stockStatus", stockStatus);
+            return details;
+        }, customTaskExecutor);
     }
 }

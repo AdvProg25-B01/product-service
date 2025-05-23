@@ -4,10 +4,12 @@ import id.ac.ui.cs.advprog.productservice.dto.TransactionDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionRequestDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionUpdateDTO;
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
     TransactionDTO createTransaction(TransactionRequestDTO requestDTO);
@@ -25,7 +27,14 @@ public interface TransactionService {
     List<TransactionDTO> getOngoingTransactions();
     List<TransactionDTO> filterTransactions(String customerId, List<TransactionStatus> statuses, List<String> paymentMethods, Date startDate, Date endDate, String sortBy, String sortDirection);
     TransactionDTO confirmTransaction(String id);
-    Map<String, Object> getTransactionDetails(String id);
+    CompletableFuture<Map<String, Object>> getTransactionDetails(String id);
     int batchCompleteTransactions(List<String> transactionIds);
     int batchCancelTransactions(List<String> transactionIds);
+
+    @Async
+    CompletableFuture<Integer> batchCompleteTransactionsAsync(List<String> transactionIds);
+
+    @Async
+    CompletableFuture<Integer> batchCancelTransactionsAsync(List<String> transactionIds);
+
 }

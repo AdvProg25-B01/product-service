@@ -21,6 +21,10 @@ import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -35,6 +39,9 @@ class TransactionServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
+
+    @Mock
+    private Executor customTaskExecutor;
 
     @InjectMocks
     private TransactionServiceImpl transactionService;
@@ -108,6 +115,13 @@ class TransactionServiceTest {
         Map<String, Integer> updatedQuantities = new HashMap<>();
         updatedQuantities.put("550e8400-e29b-41d4-a716-446655440001", 3);
         updateDTO.setProductQuantities(updatedQuantities);
+
+        doAnswer(invocation -> {
+            Runnable r = invocation.getArgument(0);
+            r.run();
+            return null;
+        }).when(customTaskExecutor)
+                .execute(any(Runnable.class));
     }
 
     @Test
@@ -553,8 +567,9 @@ class TransactionServiceTest {
     }
 
     @Test
-    void getTransactionDetails_Success() {
-        Map<String, Object> details = transactionService.getTransactionDetails(transactionId);
+    void getTransactionDetails_Success() throws Exception {
+        CompletableFuture<Map<String, Object>> future = transactionService.getTransactionDetails(transactionId);
+        Map<String, Object> details = future.get();
 
         assertNotNull(details);
         assertTrue(details.containsKey("transaction"));
@@ -575,14 +590,15 @@ class TransactionServiceTest {
     }
 
     @Test
-    void getTransactionDetails_NotFound() {
+    void getTransactionDetails_NotFound() throws Exception {
         when(transactionRepository.findById("non-existent-id")).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(NoSuchElementException.class, () -> {
-            transactionService.getTransactionDetails("non-existent-id");
-        });
+        CompletableFuture<Map<String, Object>> future = transactionService.getTransactionDetails("non-existent-id");
 
-        assertTrue(exception.getMessage().contains("Transaction not found"));
+        ExecutionException executionException = assertThrows(ExecutionException.class, future::get);
+        Throwable cause = executionException.getCause();
+        assertInstanceOf(NoSuchElementException.class, cause);
+        assertTrue(cause.getMessage().contains("Transaction not found"));
     }
 
     @Test
