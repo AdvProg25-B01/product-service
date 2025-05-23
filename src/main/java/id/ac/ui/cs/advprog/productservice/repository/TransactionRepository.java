@@ -2,64 +2,71 @@ package id.ac.ui.cs.advprog.productservice.repository;
 
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Repository
-public class TransactionRepository {
-    private final Map<String, Transaction> transactionStore = new ConcurrentHashMap<>();
+public interface TransactionRepository extends JpaRepository<Transaction, String> {
 
-    public Transaction save(Transaction transaction) {
-        transactionStore.put(transaction.getId(), transaction);
-        return transaction;
-    }
+    List<Transaction> findByCustomerId(String customerId);
 
-    public Optional<Transaction> findById(String id) {
-        return Optional.ofNullable(transactionStore.get(id));
-    }
+    List<Transaction> findByStatus(TransactionStatus status);
 
-    public List<Transaction> findAll() {
-        return new ArrayList<>(transactionStore.values());
-    }
+    List<Transaction> findByPaymentMethod(String paymentMethod);
 
-    public List<Transaction> findByCustomerId(String customerId) {
-        return transactionStore.values().stream()
-                .filter(transaction -> customerId.equals(transaction.getCustomerId()))
-                .collect(Collectors.toList());
-    }
+    @Query("SELECT t FROM Transaction t WHERE t.createdAt >= :startDate AND t.createdAt <= :endDate")
+    List<Transaction> findByDateRange(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
 
-    public List<Transaction> findByStatus(TransactionStatus status) {
-        return transactionStore.values().stream()
-                .filter(transaction -> status.equals(transaction.getStatus()))
-                .collect(Collectors.toList());
-    }
+    List<Transaction> findByStatusIn(List<TransactionStatus> statuses);
 
-    public List<Transaction> findByPaymentMethod(String paymentMethod) {
-        return transactionStore.values().stream()
-                .filter(transaction -> paymentMethod.equals(transaction.getPaymentMethod()))
-                .collect(Collectors.toList());
-    }
+    List<Transaction> findByPaymentMethodIn(List<String> paymentMethods);
 
-    public List<Transaction> findByDateRange(Date startDate, Date endDate) {
-        return transactionStore.values().stream()
-                .filter(transaction ->
-                        !transaction.getCreatedAt().before(startDate) &&
-                                !transaction.getCreatedAt().after(endDate))
-                .collect(Collectors.toList());
-    }
+    @Query("SELECT t FROM Transaction t WHERE t.status = 'PENDING' OR t.status = 'IN_PROGRESS'")
+    List<Transaction> findOngoingTransactions();
 
-    public void delete(String id) {
-        transactionStore.remove(id);
-    }
+    @Query("SELECT t FROM Transaction t WHERE t.id LIKE %:keyword% OR t.customerId LIKE %:keyword%")
+    List<Transaction> searchByKeyword(@Param("keyword") String keyword);
 
-    public boolean existsById(String id) {
-        return transactionStore.containsKey(id);
-    }
+    List<Transaction> findByCustomerIdAndStatus(String customerId, TransactionStatus status);
+
+    @Query("SELECT t FROM Transaction t WHERE t.customerId = :customerId AND t.createdAt >= :startDate AND t.createdAt <= :endDate")
+    List<Transaction> findByCustomerIdAndDateRange(
+            @Param("customerId") String customerId,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate
+    );
+
+    @Query("SELECT t FROM Transaction t " +
+            "WHERE (:customerId IS NULL OR t.customerId = :customerId) " +
+            "AND (:statuses IS NULL OR t.status IN :statuses) " +
+            "AND (:paymentMethods IS NULL OR t.paymentMethod IN :paymentMethods) " +
+            "AND (:startDate IS NULL OR t.createdAt >= :startDate) " +
+            "AND (:endDate IS NULL OR t.createdAt <= :endDate)")
+    List<Transaction> findTransactionsWithFilters(
+            @Param("customerId") String customerId,
+            @Param("statuses") List<TransactionStatus> statuses,
+            @Param("paymentMethods") List<String> paymentMethods,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate
+    );
+
+    long countByStatus(TransactionStatus status);
+
+    List<Transaction> findByCreatedAtAfter(Date date);
+
+    List<Transaction> findByCreatedAtBefore(Date date);
+
+    @Query("SELECT t FROM Transaction t WHERE t.totalAmount > :amount")
+    List<Transaction> findByTotalAmountGreaterThan(@Param("amount") double amount);
+
+    @Query("SELECT t FROM Transaction t WHERE t.totalAmount < :amount")
+    List<Transaction> findByTotalAmountLessThan(@Param("amount") double amount);
+
+    @Query("SELECT t FROM Transaction t WHERE t.totalAmount BETWEEN :minAmount AND :maxAmount")
+    List<Transaction> findByTotalAmountBetween(@Param("minAmount") double minAmount, @Param("maxAmount") double maxAmount);
 }
