@@ -10,6 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.Date;
 import java.util.List;
@@ -139,9 +140,9 @@ public class TransactionController {
     }
 
     @GetMapping("/{id}/details")
-    public ResponseEntity<Map<String, Object>> getTransactionDetails(@PathVariable String id) {
-        Map<String, Object> details = transactionService.getTransactionDetails(id);
-        return ResponseEntity.ok(details);
+    public CompletableFuture<ResponseEntity<Map<String, Object>>> getTransactionDetails(@PathVariable String id) {
+        return transactionService.getTransactionDetails(id)
+                .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/batch/complete")
@@ -154,5 +155,19 @@ public class TransactionController {
     public ResponseEntity<Integer> cancelMultipleTransactions(@RequestBody List<String> transactionIds) {
         int canceledCount = transactionService.batchCancelTransactions(transactionIds);
         return ResponseEntity.ok(canceledCount);
+    }
+
+    @PostMapping("/batch/complete/async")
+    public CompletableFuture<ResponseEntity<Integer>> completeMultipleTransactionsAsync(
+            @RequestBody List<String> transactionIds) {
+        return transactionService.batchCompleteTransactionsAsync(transactionIds)
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/batch/cancel/async")
+    public CompletableFuture<ResponseEntity<Integer>> cancelMultipleTransactionsAsync(
+            @RequestBody List<String> transactionIds) {
+        return transactionService.batchCancelTransactionsAsync(transactionIds)
+                .thenApply(ResponseEntity::ok);
     }
 }
