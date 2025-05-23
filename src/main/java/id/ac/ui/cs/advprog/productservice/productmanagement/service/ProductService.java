@@ -2,11 +2,13 @@ package id.ac.ui.cs.advprog.productservice.productmanagement.service;
 
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.repository.ProductRepository;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ProductService {
@@ -17,21 +19,23 @@ public class ProductService {
         this.repository = repository;
     }
 
-    public boolean addProduct(Product product, boolean confirmed) {
+    @Async
+    public CompletableFuture<Boolean> addProduct(Product product, boolean confirmed) {
         if (!confirmed || product.getPrice() <= 0) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
         repository.save(product);
-        return true;
+        return CompletableFuture.completedFuture(true);
     }
 
-    public boolean editProduct(Product updatedProduct, boolean confirmed) {
+    @Async
+    public CompletableFuture<Boolean> editProduct(Product updatedProduct, boolean confirmed) {
         if (!confirmed) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         Optional<Product> existing = repository.findById(updatedProduct.getId());
-        if (existing.isEmpty()) return false;
+        if (existing.isEmpty()) return CompletableFuture.completedFuture(false);
 
         Product product = existing.get();
         product.setCategory(updatedProduct.getCategory());
@@ -39,20 +43,21 @@ public class ProductService {
         product.setPrice(updatedProduct.getPrice());
 
         repository.save(product);
-        return true;
+        return CompletableFuture.completedFuture(true);
     }
 
-    public boolean deleteProduct(String name, boolean confirmed) {
+    @Async
+    public CompletableFuture<Boolean> deleteProduct(String name, boolean confirmed) {
         if (!confirmed) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         Optional<Product> productToDelete = repository.findByName(name);
         if (productToDelete.isPresent()) {
             repository.delete(productToDelete.get());
-            return true;
+            return CompletableFuture.completedFuture(true);
         }
-        return false;
+        return CompletableFuture.completedFuture(false);
     }
 
     public Optional<Product> getProductById(String id) {

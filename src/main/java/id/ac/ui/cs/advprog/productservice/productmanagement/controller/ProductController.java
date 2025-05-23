@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @CrossOrigin
 @RestController
@@ -21,7 +22,7 @@ public class ProductController {
 
     // Create a new product (REST API version)
     @PostMapping("/create")
-    public ResponseEntity<?> createProduct(@RequestBody Product incomingProduct) {
+    public CompletableFuture<ResponseEntity<?>> createProduct(@RequestBody Product incomingProduct) {
         try {
             Product product = ProductFactory.createProduct(
                     incomingProduct.getName(),
@@ -29,13 +30,18 @@ public class ProductController {
                     incomingProduct.getStock(),
                     incomingProduct.getPrice()
             );
-            boolean success = productService.addProduct(product, true);
-            if (!success) {
-                return ResponseEntity.badRequest().body("Product is invalid or could not be created");
-            }
-            return ResponseEntity.status(HttpStatus.CREATED).body(product);
+            // Call the async service method
+            return productService.addProduct(product, true)
+                    .thenApply(success -> {
+                        if (!success) {
+                            return ResponseEntity.badRequest().body("Product is invalid or could not be created");
+                        }
+                        return ResponseEntity.status(HttpStatus.CREATED).body(product);
+                    })
+                    .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("An error occurred during product creation: " + ex.getMessage()));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Product is invalid or could not be created");
+            return CompletableFuture.completedFuture(ResponseEntity.badRequest().body("Product is invalid or could not be created"));
         }
     }
 
@@ -86,28 +92,37 @@ public class ProductController {
 
     // Update an existing product
     @PutMapping("/edit/{name}")
-    public ResponseEntity<?> editProduct(@PathVariable String name,
-                                         @RequestBody Product product) {
-        boolean success = productService.editProduct(product, true); // Auto-confirm for API
+    public CompletableFuture<ResponseEntity<?>> editProduct(@PathVariable String name,
+                                                            @RequestBody Product product) {
+        // Assume 'product' has the ID set for lookup in the service layer
+        // If not, you might need to fetch the existing product by name first to get its ID,
+        // and then pass the ID to the service method.
+        // For simplicity, assuming product.getId() is set correctly here.
 
-        if (!success) {
-            return ResponseEntity.badRequest()
-                    .body("Edit failed. Product could not be updated.");
-        }
-
-        return ResponseEntity.ok(product);
+        return productService.editProduct(product, true) // Call the async service method
+                .thenApply(success -> {
+                    if (!success) {
+                        return ResponseEntity.badRequest()
+                                .body("Edit failed. Product could not be updated or not found.");
+                    }
+                    return ResponseEntity.ok(product);
+                })
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("An error occurred during product edit: " + ex.getMessage()));
     }
 
     // Delete a product
     @DeleteMapping("/delete/{name}")
-    public ResponseEntity<?> deleteProduct(@PathVariable String name) {
-        boolean success = productService.deleteProduct(name, true); // Auto-confirm for API
-
-        if (!success) {
-            return ResponseEntity.badRequest()
-                    .body("Product deletion failed.");
-        }
-
-        return ResponseEntity.ok().body("Product deleted successfully");
+    public CompletableFuture<ResponseEntity<String>> deleteProduct(@PathVariable String name) {
+        return productService.deleteProduct(name, true) // Call the async service method
+                .thenApply(success -> {
+                    if (!success) {
+                        return ResponseEntity.badRequest()
+                                .body("Product deletion failed or product not found.");
+                    }
+                    return ResponseEntity.ok().body("Product deleted successfully");
+                })
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("An error occurred during product deletion: " + ex.getMessage()));
     }
 }
