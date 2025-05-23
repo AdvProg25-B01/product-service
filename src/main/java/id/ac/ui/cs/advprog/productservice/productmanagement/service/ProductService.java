@@ -61,7 +61,12 @@ public class ProductService {
     }
 
     public Optional<Product> getProductById(String id) {
-        return repository.findById(UUID.fromString(id));
+        try {
+            UUID uuid = UUID.fromString(id);
+            return repository.findById(uuid);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     public List<Product> getAllProducts() {
