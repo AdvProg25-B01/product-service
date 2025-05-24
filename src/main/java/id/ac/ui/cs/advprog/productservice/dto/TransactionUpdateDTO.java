@@ -7,6 +7,6 @@ import java.util.Map;
 @Data
 public class TransactionUpdateDTO {
     private String customerId;
-    private Map<String, Integer> productQuantities;
+    private Double amount;
     private String paymentMethod;
 }
