@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public class TransactionDTO {
     private String id;
     private String customerId;
+    private String paymentId;
     private List<TransactionItemDTO> items;
     private double totalAmount;
     private String paymentMethod;
@@ -24,6 +25,7 @@ public class TransactionDTO {
         TransactionDTO dto = new TransactionDTO();
         dto.setId(transaction.getId());
         dto.setCustomerId(transaction.getCustomerId());
+        dto.setPaymentId(transaction.getPayment().getId());
         dto.setItems(transaction.getItems().stream()
                 .map(TransactionItemDTO::fromTransactionItem)
                 .collect(Collectors.toList()));
