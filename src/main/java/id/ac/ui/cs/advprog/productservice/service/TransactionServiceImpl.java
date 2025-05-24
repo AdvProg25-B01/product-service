@@ -4,10 +4,12 @@ import id.ac.ui.cs.advprog.productservice.dto.TransactionDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionRequestDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionUpdateDTO;
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
+import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
 import id.ac.ui.cs.advprog.productservice.model.TransactionItem;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
+import id.ac.ui.cs.advprog.productservice.repository.PaymentRepository;
 import id.ac.ui.cs.advprog.productservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,25 +29,23 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final ProductService productService;
     private final TransactionRepository transactionRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentService paymentService;
     private final Executor customTaskExecutor;
 
     @Autowired
     public TransactionServiceImpl(ProductService productService,
                                   TransactionRepository transactionRepository,
+                                  PaymentRepository paymentRepository,
+                                  PaymentService paymentService,
                                   @Qualifier("customTaskExecutor") Executor customTaskExecutor) {
         this.productService = productService;
         this.transactionRepository = transactionRepository;
+        this.paymentRepository = paymentRepository;
+        this.paymentService = paymentService;
         this.customTaskExecutor = customTaskExecutor != null
                 ? customTaskExecutor
-                : ForkJoinPool.commonPool();;
-    }
-
-    private String getProductId(Product product) {
-        try {
-            return product.getId().toString();
-        } catch (Exception e) {
-            return "unknown-" + System.identityHashCode(product);
-        }
+                : ForkJoinPool.commonPool();
     }
 
     @Override
@@ -54,8 +54,8 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = new Transaction();
         transaction.setCustomerId(requestDTO.getCustomerId());
         transaction.setPaymentMethod(requestDTO.getPaymentMethod());
-        transaction.setStatus(TransactionStatus.PENDING);
 
+        // Process product items and calculate total
         for (Map.Entry<String, Integer> entry : requestDTO.getProductQuantities().entrySet()) {
             String productId = entry.getKey();
             Integer quantity = entry.getValue();
@@ -77,10 +77,74 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         transaction.calculateTotalAmount();
+
+        double totalAmount = transaction.getTotalAmount();
+        double paidAmount = requestDTO.getAmount();
+
+        if (totalAmount - paidAmount == 0) {
+            transaction.setStatus(TransactionStatus.COMPLETED);
+        } else {
+            transaction.setStatus(TransactionStatus.IN_PROGRESS);
+        }
+
+        String paymentStatus = "";
+        if (transaction.getStatus() == TransactionStatus.COMPLETED) {
+            paymentStatus = "LUNAS";
+        } else if (transaction.getStatus() == TransactionStatus.IN_PROGRESS) {
+            paymentStatus = "CICILAN";
+        }
+
+        Payment payment = new Payment(
+                null,
+                requestDTO.getCustomerId(),
+                paidAmount,
+                requestDTO.getPaymentMethod(),
+                paymentStatus,
+                new Date()
+        );
+
+        // Save payment to generate ID
+        payment = paymentRepository.save(payment);
+        transaction.setPayment(payment);
+
         transaction = transactionRepository.save(transaction);
 
         return TransactionDTO.fromTransaction(transaction);
     }
+
+//    @Override
+//    @Transactional
+//    public TransactionDTO createDraftTransaction(TransactionRequestDTO requestDTO) {
+//        Transaction transaction = new Transaction();
+//        transaction.setCustomerId(requestDTO.getCustomerId());
+//        transaction.setPaymentMethod(requestDTO.getPaymentMethod());
+//        transaction.setStatus(TransactionStatus.PENDING);
+//
+//        for (Map.Entry<String, Integer> entry : requestDTO.getProductQuantities().entrySet()) {
+//            String productId = entry.getKey();
+//            Integer quantity = entry.getValue();
+//            if (quantity <= 0) continue;
+//
+//            Product product = productService
+//                    .getProductById(productId)
+//                    .orElseThrow(() -> new NoSuchElementException(
+//                            "Product not found: " + productId));
+//
+//            if (product.getStock() < quantity)
+//                throw new IllegalStateException("Not enough stock for product: " + product.getName());
+//
+//            TransactionItem transactionItem = new TransactionItem(product, quantity);
+//            transaction.addItem(transactionItem);
+//
+//            product.setStock(product.getStock() - quantity);
+//            productService.editProduct(product, true);
+//        }
+//
+//        transaction.calculateTotalAmount();
+//        transaction = transactionRepository.save(transaction);
+//
+//        return TransactionDTO.fromTransaction(transaction);
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -146,37 +210,37 @@ public class TransactionServiceImpl implements TransactionService {
         if (updateDTO.getPaymentMethod() != null)
             transaction.setPaymentMethod(updateDTO.getPaymentMethod());
 
-        if (updateDTO.getProductQuantities() != null) {
-            for (TransactionItem item : transaction.getItems()) {
-                Product product = item.getProduct();
-                product.setStock(product.getStock() + item.getQuantity());
-                productService.editProduct(product, true);
-            }
+        if (updateDTO.getAmount() != null) {
+            Payment currentPayment = transaction.getPayment();
 
-            transaction.getItems().clear();
+            if (currentPayment != null && "CICILAN".equals(currentPayment.getStatus())) {
+                double newPaidAmount = updateDTO.getAmount();
+                double totalAmount = transaction.getTotalAmount();
 
-            for (Map.Entry<String, Integer> entry : updateDTO.getProductQuantities().entrySet()) {
-                String productId = entry.getKey();
-                Integer quantity = entry.getValue();
-
-                if (quantity > 0) {
-                    Product product = productService
-                            .getProductById(productId)
-                            .orElseThrow(() -> new NoSuchElementException(
-                                    "Product not found: " + productId));
-
-                    if (product.getStock() < quantity)
-                        throw new IllegalStateException("Not enough stock for product: " + product.getName());
-
-                    TransactionItem transactionItem = new TransactionItem(product, quantity);
-                    transaction.addItem(transactionItem);
-                    product.setStock(product.getStock() - quantity);
-                    productService.editProduct(product, true);
+                // Validate payment amount
+                if (newPaidAmount < 0) {
+                    throw new IllegalArgumentException("Payment amount cannot be negative");
                 }
+                if (newPaidAmount > totalAmount) {
+                    throw new IllegalArgumentException("Payment amount cannot exceed total amount");
+                }
+
+                // Update payment amount
+                currentPayment.setAmount(newPaidAmount);
+
+                // Update payment status and transaction status based on payment completeness
+                if (totalAmount - newPaidAmount == 0) {
+                    transaction.setStatus(TransactionStatus.COMPLETED);
+                    currentPayment.setStatus("LUNAS");
+                } else {
+                    transaction.setStatus(TransactionStatus.IN_PROGRESS);
+                    currentPayment.setStatus("CICILAN");
+                }
+            } else if (currentPayment != null && !"CICILAN".equals(currentPayment.getStatus())) {
+                throw new IllegalStateException("Cannot update payment amount for non-installment transactions");
             }
         }
 
-        transaction.calculateTotalAmount();
         transaction.setUpdatedAt(new Date());
         transaction = transactionRepository.save(transaction);
 
@@ -206,6 +270,9 @@ public class TransactionServiceImpl implements TransactionService {
 
         if (transaction.getStatus() == TransactionStatus.CANCELLED)
             throw new IllegalStateException("Transaction is already cancelled");
+
+        if (transaction.getStatus() == TransactionStatus.COMPLETED)
+            throw new IllegalStateException("Transaction is already completed");
 
         for (TransactionItem item : transaction.getItems()) {
             Product product = item.getProduct();
@@ -273,21 +340,12 @@ public class TransactionServiceImpl implements TransactionService {
                 .map(TransactionDTO::fromTransaction)
                 .collect(Collectors.toList());
 
-        Comparator<TransactionDTO> comparator;
-        switch (sortBy != null ? sortBy.toLowerCase() : "createdat") {
-            case "totalamount":
-                comparator = Comparator.comparing(TransactionDTO::getTotalAmount);
-                break;
-            case "updatedat":
-                comparator = Comparator.comparing(TransactionDTO::getUpdatedAt);
-                break;
-            case "status":
-                comparator = Comparator.comparing(dto -> dto.getStatus().name());
-                break;
-            case "createdat":
-            default:
-                comparator = Comparator.comparing(TransactionDTO::getCreatedAt);
-        }
+        Comparator<TransactionDTO> comparator = switch (sortBy != null ? sortBy.toLowerCase() : "createdat") {
+            case "totalamount" -> Comparator.comparing(TransactionDTO::getTotalAmount);
+            case "updatedat" -> Comparator.comparing(TransactionDTO::getUpdatedAt);
+            case "status" -> Comparator.comparing(dto -> dto.getStatus().name());
+            default -> Comparator.comparing(TransactionDTO::getCreatedAt);
+        };
 
         if ("desc".equalsIgnoreCase(sortDirection)) {
             comparator = comparator.reversed();
@@ -415,7 +473,7 @@ public class TransactionServiceImpl implements TransactionService {
                         status.put("currentStock", product.getStock());
                         return status;
                     }, customTaskExecutor))
-                    .collect(Collectors.toList());
+                    .toList();
 
             List<Map<String, Object>> stockStatus = futures.stream()
                     .map(CompletableFuture::join)
