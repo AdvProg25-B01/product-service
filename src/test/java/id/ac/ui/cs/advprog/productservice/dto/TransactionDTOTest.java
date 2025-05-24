@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.productservice.dto;
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
 import id.ac.ui.cs.advprog.productservice.model.TransactionItem;
+import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ class TransactionDTOTest {
     private Product product2;
     private Date createdAt;
     private Date updatedAt;
+    private Payment payment;
 
     @BeforeEach
     void setUp() {
@@ -32,11 +34,15 @@ class TransactionDTOTest {
         product2 = new Product("Product 2", "Category 2", 20, 200.0);
         product2.setId(UUID.randomUUID());
 
+        payment = new Payment();
+        payment.setId("payment-123");
+
         List<TransactionItem> items = new ArrayList<>();
         items.add(new TransactionItem(product1, 2));
         items.add(new TransactionItem(product2, 1));
 
         transaction = new Transaction("test-id", "customer-123", items, "CASH", TransactionStatus.PENDING);
+        transaction.setPayment(payment);
         transaction.setCreatedAt(createdAt);
         transaction.setUpdatedAt(updatedAt);
         transaction.calculateTotalAmount(); // Ensure total amount is calculated
@@ -48,6 +54,7 @@ class TransactionDTOTest {
 
         assertEquals("test-id", dto.getId());
         assertEquals("customer-123", dto.getCustomerId());
+        assertEquals("payment-123", dto.getPaymentId());
         assertEquals(2, dto.getItems().size());
         assertEquals(400.0, dto.getTotalAmount(), 0.001); // (100*2) + (200*1)
         assertEquals("CASH", dto.getPaymentMethod());
@@ -58,13 +65,18 @@ class TransactionDTOTest {
 
     @Test
     void fromTransaction_ShouldHandleEmptyItems() {
+        Payment emptyPayment = new Payment();
+        emptyPayment.setId("payment-456");
+
         Transaction emptyTransaction = new Transaction("empty-id", "customer-456", new ArrayList<>(), "CARD", TransactionStatus.COMPLETED);
+        emptyTransaction.setPayment(emptyPayment);
         emptyTransaction.setCreatedAt(createdAt);
         emptyTransaction.setUpdatedAt(updatedAt);
 
         TransactionDTO dto = TransactionDTO.fromTransaction(emptyTransaction);
 
         assertEquals("empty-id", dto.getId());
+        assertEquals("payment-456", dto.getPaymentId());
         assertTrue(dto.getItems().isEmpty());
         assertEquals(0.0, dto.getTotalAmount(), 0.001);
     }
@@ -110,6 +122,7 @@ class TransactionDTOTest {
 
         dto.setId("new-id");
         dto.setCustomerId("new-customer");
+        dto.setPaymentId("new-payment-id");
         dto.setItems(items);
         dto.setTotalAmount(750.0);
         dto.setPaymentMethod("INSTALLMENT");
@@ -119,6 +132,7 @@ class TransactionDTOTest {
 
         assertEquals("new-id", dto.getId());
         assertEquals("new-customer", dto.getCustomerId());
+        assertEquals("new-payment-id", dto.getPaymentId());
         assertEquals(items, dto.getItems());
         assertEquals(750.0, dto.getTotalAmount(), 0.001);
         assertEquals("INSTALLMENT", dto.getPaymentMethod());

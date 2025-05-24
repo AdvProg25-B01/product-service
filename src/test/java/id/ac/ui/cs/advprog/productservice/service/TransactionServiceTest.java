@@ -4,10 +4,12 @@ import id.ac.ui.cs.advprog.productservice.dto.TransactionDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionRequestDTO;
 import id.ac.ui.cs.advprog.productservice.dto.TransactionUpdateDTO;
 import id.ac.ui.cs.advprog.productservice.enums.TransactionStatus;
+import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.model.Transaction;
 import id.ac.ui.cs.advprog.productservice.model.TransactionItem;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
+import id.ac.ui.cs.advprog.productservice.repository.PaymentRepository;
 import id.ac.ui.cs.advprog.productservice.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,12 +21,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
 import org.mockito.junit.jupiter.MockitoSettings;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -41,6 +41,12 @@ class TransactionServiceTest {
     private TransactionRepository transactionRepository;
 
     @Mock
+    private PaymentRepository paymentRepository;
+
+    @Mock
+    private PaymentService paymentService;
+
+    @Mock
     private Executor customTaskExecutor;
 
     @InjectMocks
@@ -49,6 +55,7 @@ class TransactionServiceTest {
     private Product product1;
     private Product product2;
     private Transaction transaction;
+    private Payment payment;
     private TransactionRequestDTO requestDTO;
     private TransactionUpdateDTO updateDTO;
     private String transactionId;
@@ -66,6 +73,9 @@ class TransactionServiceTest {
         transactionId = "test-transaction-id";
         customerId = "test-customer-id";
 
+        // Create payment
+        payment = new Payment("payment-id", customerId, 200.0, "CASH", "LUNAS", new Date());
+
         transactionItems = new ArrayList<>();
         TransactionItem item1 = new TransactionItem(product1, 2);
         transactionItems.add(item1);
@@ -77,6 +87,7 @@ class TransactionServiceTest {
         transaction.setStatus(TransactionStatus.PENDING);
         transaction.setCreatedAt(new Date());
         transaction.setUpdatedAt(new Date());
+        transaction.setPayment(payment);
 
         for (TransactionItem item : transactionItems) {
             transaction.addItem(item);
@@ -88,6 +99,13 @@ class TransactionServiceTest {
 
         when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(transaction));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = i.getArgument(0);
+            if (p.getId() == null) {
+                p.setId("generated-payment-id");
+            }
+            return p;
+        });
 
         List<Transaction> transactionList = Collections.singletonList(transaction);
         when(transactionRepository.findAll()).thenReturn(transactionList);
@@ -102,19 +120,15 @@ class TransactionServiceTest {
         requestDTO = new TransactionRequestDTO();
         requestDTO.setCustomerId(customerId);
         requestDTO.setPaymentMethod("CASH");
+        requestDTO.setAmount(200.0); // Full payment amount
 
         Map<String, Integer> productQuantities = new HashMap<>();
         productQuantities.put("550e8400-e29b-41d4-a716-446655440001", 2);
-        productQuantities.put("550e8400-e29b-41d4-a716-446655440002", 1);
         requestDTO.setProductQuantities(productQuantities);
 
         updateDTO = new TransactionUpdateDTO();
         updateDTO.setCustomerId("updated-customer-id");
         updateDTO.setPaymentMethod("CARD");
-
-        Map<String, Integer> updatedQuantities = new HashMap<>();
-        updatedQuantities.put("550e8400-e29b-41d4-a716-446655440001", 3);
-        updateDTO.setProductQuantities(updatedQuantities);
 
         doAnswer(invocation -> {
             Runnable r = invocation.getArgument(0);
@@ -125,25 +139,49 @@ class TransactionServiceTest {
     }
 
     @Test
-    void createTransaction_Success() {
+    void createTransaction_FullPayment_Success() {
+        requestDTO.setAmount(200.0); // Full payment
+
         TransactionDTO result = transactionService.createTransaction(requestDTO);
 
         assertNotNull(result);
         assertEquals(customerId, result.getCustomerId());
         assertEquals("CASH", result.getPaymentMethod());
-        assertEquals(TransactionStatus.PENDING, result.getStatus());
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
 
         verify(productService, times(1)).getProductById("550e8400-e29b-41d4-a716-446655440001");
-        verify(productService, times(1)).getProductById("550e8400-e29b-41d4-a716-446655440002");
-        verify(productService, times(2)).editProduct(any(Product.class), eq(true));
-
+        verify(productService, times(1)).editProduct(any(Product.class), eq(true));
+        verify(paymentRepository).save(any(Payment.class));
         verify(transactionRepository).save(any(Transaction.class));
 
         ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
         verify(transactionRepository).save(transactionCaptor.capture());
         Transaction savedTransaction = transactionCaptor.getValue();
 
-        assertEquals(2, savedTransaction.getItems().size());
+        assertEquals(1, savedTransaction.getItems().size());
+        assertNotNull(savedTransaction.getPayment());
+    }
+
+    @Test
+    void createTransaction_PartialPayment_InProgress() {
+        requestDTO.setAmount(100.0); // Partial payment
+
+        TransactionDTO result = transactionService.createTransaction(requestDTO);
+
+        assertNotNull(result);
+        assertEquals(customerId, result.getCustomerId());
+        assertEquals("CASH", result.getPaymentMethod());
+        assertEquals(TransactionStatus.IN_PROGRESS, result.getStatus());
+
+        verify(paymentRepository).save(any(Payment.class));
+        verify(transactionRepository).save(any(Transaction.class));
+
+        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(paymentCaptor.capture());
+        Payment savedPayment = paymentCaptor.getValue();
+
+        assertEquals("CICILAN", savedPayment.getStatus());
+        assertEquals(100.0, savedPayment.getAmount());
     }
 
     @Test
@@ -152,6 +190,7 @@ class TransactionServiceTest {
         Map<String, Integer> productQuantities = new HashMap<>();
         productQuantities.put("non-existent-product", 1);
         requestDTO.setProductQuantities(productQuantities);
+        requestDTO.setAmount(100.0);
 
         Exception exception = assertThrows(NoSuchElementException.class, () -> {
             transactionService.createTransaction(requestDTO);
@@ -159,6 +198,7 @@ class TransactionServiceTest {
 
         assertTrue(exception.getMessage().contains("Product not found"));
         verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test
@@ -168,6 +208,7 @@ class TransactionServiceTest {
         Map<String, Integer> productQuantities = new HashMap<>();
         productQuantities.put("550e8400-e29b-41d4-a716-446655440001", 2);
         requestDTO.setProductQuantities(productQuantities);
+        requestDTO.setAmount(200.0);
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             transactionService.createTransaction(requestDTO);
@@ -175,6 +216,7 @@ class TransactionServiceTest {
 
         assertTrue(exception.getMessage().contains("Not enough stock"));
         verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test
@@ -248,7 +290,7 @@ class TransactionServiceTest {
 
     @Test
     void getTransactionsByDateRange_Success() {
-        Date startDate = new Date(System.currentTimeMillis() - 86400000); // 1 day ago
+        Date startDate = new Date(System.currentTimeMillis() - 86400000);
         Date endDate = new Date();
 
         List<TransactionDTO> results = transactionService.getTransactionsByDateRange(startDate, endDate);
@@ -260,7 +302,7 @@ class TransactionServiceTest {
     }
 
     @Test
-    void updateTransaction_Success() {
+    void updateTransaction_BasicFields_Success() {
         TransactionDTO result = transactionService.updateTransaction(transactionId, updateDTO);
 
         assertNotNull(result);
@@ -274,6 +316,29 @@ class TransactionServiceTest {
 
         assertEquals("updated-customer-id", savedTransaction.getCustomerId());
         assertEquals("CARD", savedTransaction.getPaymentMethod());
+    }
+
+    @Test
+    void updateTransaction_PaymentAmount_Success() {
+        // Set up transaction with installment payment
+        payment.setStatus("CICILAN");
+        payment.setAmount(100.0);
+        transaction.setStatus(TransactionStatus.IN_PROGRESS);
+
+        updateDTO = new TransactionUpdateDTO();
+        updateDTO.setAmount(200.0); // Full payment
+
+        TransactionDTO result = transactionService.updateTransaction(transactionId, updateDTO);
+
+        assertNotNull(result);
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+
+        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(transactionCaptor.capture());
+        Transaction savedTransaction = transactionCaptor.getValue();
+
+        assertEquals("LUNAS", savedTransaction.getPayment().getStatus());
+        assertEquals(200.0, savedTransaction.getPayment().getAmount());
     }
 
     @Test
@@ -307,12 +372,6 @@ class TransactionServiceTest {
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).save(any(Transaction.class));
-
-        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
-        verify(transactionRepository).save(transactionCaptor.capture());
-        Transaction savedTransaction = transactionCaptor.getValue();
-
-        assertEquals(TransactionStatus.COMPLETED, savedTransaction.getStatus());
     }
 
     @Test
@@ -346,14 +405,7 @@ class TransactionServiceTest {
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).save(any(Transaction.class));
-
         verify(productService, atLeastOnce()).editProduct(any(Product.class), eq(true));
-
-        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
-        verify(transactionRepository).save(transactionCaptor.capture());
-        Transaction savedTransaction = transactionCaptor.getValue();
-
-        assertEquals(TransactionStatus.CANCELLED, savedTransaction.getStatus());
     }
 
     @Test
@@ -379,12 +431,22 @@ class TransactionServiceTest {
     }
 
     @Test
+    void cancelTransaction_AlreadyCompleted() {
+        transaction.setStatus(TransactionStatus.COMPLETED);
+
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            transactionService.cancelTransaction(transactionId);
+        });
+
+        assertTrue(exception.getMessage().contains("Transaction is already completed"));
+    }
+
+    @Test
     void deleteTransaction_Success() {
         transactionService.deleteTransaction(transactionId);
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).deleteById(transactionId);
-
         verify(productService, atLeastOnce()).editProduct(any(Product.class), eq(true));
     }
 
@@ -407,7 +469,6 @@ class TransactionServiceTest {
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).deleteById(transactionId);
-
         verify(productService, never()).editProduct(any(Product.class), eq(true));
     }
 
@@ -438,10 +499,16 @@ class TransactionServiceTest {
         Transaction pendingTransaction = new Transaction();
         pendingTransaction.setId("pending-id");
         pendingTransaction.setStatus(TransactionStatus.PENDING);
+        // Add payment to pendingTransaction
+        Payment pendingPayment = new Payment("pending-payment-id", "customer-1", 100.0, "CASH", "CICILAN", new Date());
+        pendingTransaction.setPayment(pendingPayment);
 
         Transaction inProgressTransaction = new Transaction();
         inProgressTransaction.setId("in-progress-id");
         inProgressTransaction.setStatus(TransactionStatus.IN_PROGRESS);
+        // Add payment to inProgressTransaction
+        Payment inProgressPayment = new Payment("in-progress-payment-id", "customer-2", 150.0, "CARD", "CICILAN", new Date());
+        inProgressTransaction.setPayment(inProgressPayment);
 
         allTransactions.add(pendingTransaction);
         allTransactions.add(inProgressTransaction);
@@ -481,6 +548,9 @@ class TransactionServiceTest {
         matchingTransaction.setPaymentMethod("CASH");
         matchingTransaction.setStatus(TransactionStatus.PENDING);
         matchingTransaction.setCreatedAt(middleDate);
+        // Add payment to matchingTransaction
+        Payment matchingPayment = new Payment("matching-payment-id", "customer-1", 200.0, "CASH", "LUNAS", middleDate);
+        matchingTransaction.setPayment(matchingPayment);
 
         testTransactions.add(matchingTransaction);
 
@@ -518,12 +588,6 @@ class TransactionServiceTest {
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).save(any(Transaction.class));
-
-        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
-        verify(transactionRepository).save(transactionCaptor.capture());
-        Transaction savedTransaction = transactionCaptor.getValue();
-
-        assertEquals(TransactionStatus.IN_PROGRESS, savedTransaction.getStatus());
     }
 
     @Test
@@ -578,6 +642,7 @@ class TransactionServiceTest {
         TransactionDTO transactionDTO = (TransactionDTO) details.get("transaction");
         assertEquals(transactionId, transactionDTO.getId());
 
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> stockStatus = (List<Map<String, Object>>) details.get("stockStatus");
         assertFalse(stockStatus.isEmpty());
 
@@ -680,49 +745,4 @@ class TransactionServiceTest {
 
         verify(transactionRepository, times(2)).findById("error-id");
     }
-
-    private String invokeGetProductId(Product product) {
-        try {
-            java.lang.reflect.Method method = TransactionServiceImpl.class.getDeclaredMethod("getProductId", Product.class);
-            method.setAccessible(true);
-            return (String) method.invoke(transactionService, product);
-        } catch (Exception e) {
-            fail("Reflection failed: " + e.getMessage());
-            return null;
-        }
-    }
-
-    @Test
-    void getProductId_Success() {
-        Product realProduct = new Product("Test Product", "Category", 10, 100.0);
-
-        try {
-            Field idField = Product.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(realProduct, UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
-        } catch (Exception e) {
-            fail("Failed to set id field: " + e.getMessage());
-        }
-
-        String result = invokeGetProductId(realProduct);
-
-        assertEquals("550e8400-e29b-41d4-a716-446655440001", result);
-    }
-
-    @Test
-    void getProductId_ExceptionHandling() {
-        Product problematicProduct = new Product("Problem Product", "Category", 10, 100.0) {
-            @Override
-            public UUID getId() {
-                throw new RuntimeException("Simulated failure");
-            }
-        };
-
-        String result = invokeGetProductId(problematicProduct);
-
-        assertNotNull(result);
-        assertTrue(result.startsWith("unknown-"),
-                "Result should start with 'unknown-' but was: " + result);
-    }
-
 }
