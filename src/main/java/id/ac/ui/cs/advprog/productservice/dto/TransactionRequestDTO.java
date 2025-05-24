@@ -8,5 +8,6 @@ import java.util.Map;
 public class TransactionRequestDTO {
     private String customerId;
     private Map<String, Integer> productQuantities;
+    private Double amount;
     private String paymentMethod;
 }
