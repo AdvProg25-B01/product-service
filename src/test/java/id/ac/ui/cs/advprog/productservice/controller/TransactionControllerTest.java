@@ -118,22 +118,6 @@ class TransactionControllerTest {
         verify(transactionService).createTransaction(any(TransactionRequestDTO.class));
     }
 
-//    @Test
-//    void createDraftTransaction_Success() throws Exception {
-//        when(transactionService.createTransaction(any(TransactionRequestDTO.class))).thenReturn(transactionDTO);
-//
-//        mockMvc.perform(post("/api/transactions/draft")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(requestDTO)))
-//                .andExpect(status().isCreated())
-//                .andExpect(jsonPath("$.id").value(transactionId))
-//                .andExpect(jsonPath("$.customerId").value("customer-123"))
-//                .andExpect(jsonPath("$.paymentMethod").value("CASH"))
-//                .andExpect(jsonPath("$.status").value("PENDING"));
-//
-//        verify(transactionService).createTransaction(any(TransactionRequestDTO.class));
-//    }
-
     @Test
     void getTransactionById_Success() throws Exception {
         when(transactionService.getTransactionById(transactionId)).thenReturn(transactionDTO);

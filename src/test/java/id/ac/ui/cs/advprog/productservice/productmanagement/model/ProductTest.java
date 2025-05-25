@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ProductTest {
 
     @Test
-    public void testCreateProductWithValidData() {
+    void testCreateProductWithValidData() {
         Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
 
         assertEquals("Laptop", product.getName());
@@ -16,7 +16,7 @@ public class ProductTest {
     }
 
     @Test
-    public void testSetCategory() {
+    void testSetCategory() {
         Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         product.setCategory("Gadget");
 
@@ -24,7 +24,7 @@ public class ProductTest {
     }
 
     @Test
-    public void testSetStock() {
+    void testSetStock() {
         Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         product.setStock(20);
 
@@ -32,7 +32,7 @@ public class ProductTest {
     }
 
     @Test
-    public void testSetPrice() {
+    void testSetPrice() {
         Product product = new Product("Laptop", "Elektronik", 30, 15000000.0);
         product.setPrice(12000000.0);
 

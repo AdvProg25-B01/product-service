@@ -15,7 +15,7 @@ public class CreatePaymentCommandTest {
     private CreatePaymentCommand command;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         paymentService = Mockito.mock(PaymentServiceImpl.class);
         payment = new Payment();
         payment.setId("p1");
@@ -28,13 +28,13 @@ public class CreatePaymentCommandTest {
     }
 
     @Test
-    public void testExecute_HappyPath_ShouldCallCreatePayment() {
+    void testExecute_HappyPath_ShouldCallCreatePayment() {
         command.execute();
         Mockito.verify(paymentService).createPayment(payment);
     }
 
     @Test
-    public void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
+    void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
         Mockito.doThrow(new RuntimeException("Payment failed"))
                 .when(paymentService).createPayment(payment);
 

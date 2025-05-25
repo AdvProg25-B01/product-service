@@ -89,7 +89,7 @@ class TransactionUpdateDTOTest {
         assertEquals(dto1, dto2);
         assertNotEquals(dto1, dto3);
         assertNotEquals(dto1, dto4);
-        assertNotEquals(dto1, null);
+        assertNotEquals(null, dto1);
         assertNotEquals(dto1, new Object());
         assertEquals(dto1, dto1);
 

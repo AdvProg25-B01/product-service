@@ -18,13 +18,13 @@ public class ViewPaymentHistoryCommandTest {
     private String customerId = "cust123";
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         paymentService = Mockito.mock(PaymentServiceImpl.class);
         command = new ViewPaymentHistoryCommand(paymentService, customerId);
     }
 
     @Test
-    public void testExecute_HappyPath_ShouldCallGetPaymentsByCustomerId() {
+    void testExecute_HappyPath_ShouldCallGetPaymentsByCustomerId() {
         List<Payment> dummyList = Collections.singletonList(Mockito.mock(Payment.class));
         Mockito.when(paymentService.getPaymentsByCustomerId(customerId)).thenReturn(dummyList);
 
@@ -33,7 +33,7 @@ public class ViewPaymentHistoryCommandTest {
     }
 
     @Test
-    public void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
+    void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
         Mockito.when(paymentService.getPaymentsByCustomerId(customerId))
                 .thenThrow(new RuntimeException("Customer ID not found"));
 

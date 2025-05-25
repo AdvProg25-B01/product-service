@@ -163,7 +163,7 @@ class TransactionItemTest {
         item.setProduct(null);
         item.setQuantity(5);
 
-        assertDoesNotThrow(() -> item.calculateSubtotal());
+        assertDoesNotThrow(item::calculateSubtotal);
         assertEquals(0.0, item.getSubtotal());
     }
 
