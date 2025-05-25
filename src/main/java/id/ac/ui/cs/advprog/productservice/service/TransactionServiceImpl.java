@@ -112,40 +112,6 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionDTO.fromTransaction(transaction);
     }
 
-//    @Override
-//    @Transactional
-//    public TransactionDTO createDraftTransaction(TransactionRequestDTO requestDTO) {
-//        Transaction transaction = new Transaction();
-//        transaction.setCustomerId(requestDTO.getCustomerId());
-//        transaction.setPaymentMethod(requestDTO.getPaymentMethod());
-//        transaction.setStatus(TransactionStatus.PENDING);
-//
-//        for (Map.Entry<String, Integer> entry : requestDTO.getProductQuantities().entrySet()) {
-//            String productId = entry.getKey();
-//            Integer quantity = entry.getValue();
-//            if (quantity <= 0) continue;
-//
-//            Product product = productService
-//                    .getProductById(productId)
-//                    .orElseThrow(() -> new NoSuchElementException(
-//                            "Product not found: " + productId));
-//
-//            if (product.getStock() < quantity)
-//                throw new IllegalStateException("Not enough stock for product: " + product.getName());
-//
-//            TransactionItem transactionItem = new TransactionItem(product, quantity);
-//            transaction.addItem(transactionItem);
-//
-//            product.setStock(product.getStock() - quantity);
-//            productService.editProduct(product, true);
-//        }
-//
-//        transaction.calculateTotalAmount();
-//        transaction = transactionRepository.save(transaction);
-//
-//        return TransactionDTO.fromTransaction(transaction);
-//    }
-
     @Override
     @Transactional(readOnly = true)
     public TransactionDTO getTransactionById(String id) {

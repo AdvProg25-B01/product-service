@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.controller;
 
+import id.ac.ui.cs.advprog.productservice.config.TestSecurityConfig;
 import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
@@ -9,10 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult; // Added for MvcResult
+import id.ac.ui.cs.advprog.productservice.security.JwtService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,10 +32,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @ActiveProfiles("test")
 @WebMvcTest(ProductController.class)
+@Import(TestSecurityConfig.class)
 public class ProductControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtService jwtService;
 
     @MockBean
     private ProductService productService;

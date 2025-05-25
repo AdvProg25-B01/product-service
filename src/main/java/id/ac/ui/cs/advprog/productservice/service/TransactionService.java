@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
     TransactionDTO createTransaction(TransactionRequestDTO requestDTO);
-//    TransactionDTO createDraftTransaction(TransactionRequestDTO requestDTO);
     TransactionDTO getTransactionById(String id);
     List<TransactionDTO> getAllTransactions();
     List<TransactionDTO> getTransactionsByCustomerId(String customerId);

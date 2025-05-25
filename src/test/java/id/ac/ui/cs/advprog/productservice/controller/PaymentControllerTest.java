@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.productservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.productservice.config.TestSecurityConfig;
 import id.ac.ui.cs.advprog.productservice.model.Payment;
 import id.ac.ui.cs.advprog.productservice.service.PaymentService;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
@@ -9,7 +10,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
@@ -23,7 +26,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ActiveProfiles("test")
 @WebMvcTest(PaymentController.class)
+@Import(TestSecurityConfig.class)
 public class PaymentControllerTest {
 
     @Autowired
