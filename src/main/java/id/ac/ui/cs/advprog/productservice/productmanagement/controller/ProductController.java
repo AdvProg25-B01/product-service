@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.controller;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.dto.SupplierAssignmentRequest;
 import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
@@ -124,5 +125,30 @@ public class ProductController {
                 })
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An error occurred during product deletion: " + ex.getMessage()));
+    }
+    
+    // Assign supplier to product
+    @PostMapping("/{productId}/assign-supplier")
+    public CompletableFuture<ResponseEntity<String>> assignSupplierToProduct(
+            @PathVariable String productId,
+            @RequestBody SupplierAssignmentRequest request) {
+        
+        try {
+            UUID productUuid = UUID.fromString(productId);
+            
+            return productService.assignSupplierToProduct(productUuid, request.getSupplierId())
+                    .thenApply(success -> {
+                        if (!success) {
+                            return ResponseEntity.badRequest()
+                                    .body("Failed to assign supplier. Product may not exist.");
+                        }
+                        return ResponseEntity.ok().body("Supplier assigned successfully to product");
+                    })
+                    .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("An error occurred during supplier assignment: " + ex.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest().body("Invalid UUID format for productId or supplierId"));
+        }
     }
 }

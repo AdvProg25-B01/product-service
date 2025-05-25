@@ -72,4 +72,18 @@ public class ProductService {
     public List<Product> getAllProducts() {
         return repository.findAll();
     }
+    
+    @Async
+    public CompletableFuture<Boolean> assignSupplierToProduct(UUID productId, UUID supplierId) {
+        Optional<Product> productOpt = repository.findById(productId);
+        if (productOpt.isEmpty()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        
+        Product product = productOpt.get();
+        product.setSupplierId(supplierId);
+        repository.save(product);
+        
+        return CompletableFuture.completedFuture(true);
+    }
 }
