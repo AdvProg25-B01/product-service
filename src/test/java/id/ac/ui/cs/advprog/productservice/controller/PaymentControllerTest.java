@@ -3,7 +3,6 @@ package id.ac.ui.cs.advprog.productservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.productservice.config.TestSecurityConfig;
 import id.ac.ui.cs.advprog.productservice.model.Payment;
-import id.ac.ui.cs.advprog.productservice.service.PaymentService;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

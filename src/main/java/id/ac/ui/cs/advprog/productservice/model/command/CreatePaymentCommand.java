@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.productservice.model.command;
 
 import id.ac.ui.cs.advprog.productservice.model.Payment;
-import id.ac.ui.cs.advprog.productservice.service.PaymentService;
 import id.ac.ui.cs.advprog.productservice.service.PaymentServiceImpl;
 
 public class CreatePaymentCommand implements PaymentCommand {

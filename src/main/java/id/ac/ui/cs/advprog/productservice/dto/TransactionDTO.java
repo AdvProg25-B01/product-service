@@ -28,7 +28,7 @@ public class TransactionDTO {
         dto.setPaymentId(transaction.getPayment().getId());
         dto.setItems(transaction.getItems().stream()
                 .map(TransactionItemDTO::fromTransactionItem)
-                .collect(Collectors.toList()));
+                .toList());
         dto.setTotalAmount(transaction.getTotalAmount());
         dto.setPaymentMethod(transaction.getPaymentMethod());
         dto.setStatus(transaction.getStatus());

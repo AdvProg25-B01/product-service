@@ -51,7 +51,7 @@ public class ProductControllerTest {
     private UUID testProductId;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         testProductId = UUID.randomUUID();
         // Assuming ProductFactory does not set ID, or it's set by constructor/service.
         // For consistency, we'll create products in tests and let the controller's factory call handle its instance.
@@ -60,7 +60,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testListProducts() throws Exception {
+    void testListProducts() throws Exception {
         List<Product> products = Arrays.asList(testProduct);
         when(productService.getAllProducts()).thenReturn(products);
 
@@ -75,7 +75,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testGetProductByName() throws Exception {
+    void testGetProductByName() throws Exception {
         List<Product> products = Arrays.asList(testProduct);
         when(productService.getAllProducts()).thenReturn(products);
 
@@ -88,7 +88,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testGetProductByNameNotFound() throws Exception {
+    void testGetProductByNameNotFound() throws Exception {
         when(productService.getAllProducts()).thenReturn(Arrays.asList());
 
         mockMvc.perform(get("/product/NonExistent"))
@@ -97,7 +97,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testGetProductByIdSuccess() throws Exception {
+    void testGetProductByIdSuccess() throws Exception {
         String productId = testProductId.toString();
         List<Product> products = Arrays.asList(testProduct);
         when(productService.getAllProducts()).thenReturn(products);
@@ -110,7 +110,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testGetProductByIdNotFound() throws Exception {
+    void testGetProductByIdNotFound() throws Exception {
         String productId = UUID.randomUUID().toString();
         when(productService.getAllProducts()).thenReturn(Arrays.asList());
 
@@ -121,7 +121,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testGetProductByIdInvalidFormat() throws Exception {
+    void testGetProductByIdInvalidFormat() throws Exception {
         mockMvc.perform(get("/product/id/{id}", "invalid-uuid"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Invalid UUID format: invalid-uuid")); // Match controller message
@@ -129,7 +129,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testCreateProductSuccess() throws Exception {
+    void testCreateProductSuccess() throws Exception {
         when(productService.addProduct(any(Product.class), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(true));
 
@@ -154,7 +154,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testCreateProductFailureFromServiceLogic() throws Exception {
+    void testCreateProductFailureFromServiceLogic() throws Exception {
         when(productService.addProduct(any(Product.class), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(false));
 
@@ -174,7 +174,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testCreateProductInvalidInputFormat() throws Exception {
+    void testCreateProductInvalidInputFormat() throws Exception {
         // This test covers the controller's immediate try-catch block for IllegalArgumentException from ProductFactory
         MvcResult mvcResult = mockMvc.perform(post("/product/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -190,7 +190,7 @@ public class ProductControllerTest {
 
 
     @Test
-    public void testEditProductSuccess() throws Exception {
+    void testEditProductSuccess() throws Exception {
         when(productService.editProduct(any(Product.class), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(true));
 
@@ -212,7 +212,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testEditProductFailure() throws Exception {
+    void testEditProductFailure() throws Exception {
         when(productService.editProduct(any(Product.class), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(false));
 
@@ -232,7 +232,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testDeleteProductSuccess() throws Exception {
+    void testDeleteProductSuccess() throws Exception {
         when(productService.deleteProduct(eq("Test Laptop"), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(true));
 
@@ -247,7 +247,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void testDeleteProductFailure() throws Exception {
+    void testDeleteProductFailure() throws Exception {
         when(productService.deleteProduct(eq("NonExistent"), eq(true)))
                 .thenReturn(CompletableFuture.completedFuture(false));
 
