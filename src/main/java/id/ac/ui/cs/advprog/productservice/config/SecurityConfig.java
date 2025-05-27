@@ -25,8 +25,11 @@ public class SecurityConfig {
         return http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(List.of("http://localhost:3000"));
-                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+                    config.setAllowedOrigins(List.of(
+                            "http://localhost:3000",
+                            "https://main.d2mcs3ch2l35ck.amplifyapp.com"
+                    ));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                     config.setAllowedHeaders(List.of("*"));
                     config.setAllowCredentials(true);
                     return config;
