@@ -136,5 +136,6 @@ jobs:
               -e JDBC_DATABASE_URL=${{ secrets.JDBC_DATABASE_URL }} \
               -e JDBC_DATABASE_USERNAME=${{ secrets.JDBC_DATABASE_USERNAME }} \
               -e JDBC_DATABASE_PASSWORD=${{ secrets.JDBC_DATABASE_PASSWORD }} \
+              -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
               ${{ secrets.REGISTRY_USER }}/${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
           EOF
