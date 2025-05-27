@@ -30,12 +30,12 @@ public class ProductServiceTest {
     private ProductService productService;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         // No manual instantiation needed here, @InjectMocks handles it
     }
 
     @Test
-    public void testAddProductSuccess() throws ExecutionException, InterruptedException { // Added throws
+    void testAddProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         when(productRepository.save(any(Product.class))).thenReturn(product); // Mock the save operation if needed
 
@@ -46,7 +46,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testAddProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
+    void testAddProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
 
         CompletableFuture<Boolean> futureResult = productService.addProduct(product, false);
@@ -56,7 +56,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testAddProductInvalidPrice() throws ExecutionException, InterruptedException { // Added throws
+    void testAddProductInvalidPrice() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, -100.0);
 
         CompletableFuture<Boolean> futureResult = productService.addProduct(product, true);
@@ -66,7 +66,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testEditProductSuccess() throws ExecutionException, InterruptedException { // Added throws
+    void testEditProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         UUID productId = UUID.randomUUID();
         Product existingProduct = new Product("Laptop", "Electronics", 10, 999.99);
         existingProduct.setId(productId);
@@ -88,7 +88,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testEditProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
+    void testEditProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
         Product updatedProduct = new Product("Laptop", "Computing", 15, 1199.99);
 
         CompletableFuture<Boolean> futureResult = productService.editProduct(updatedProduct, false);
@@ -99,7 +99,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testEditProductNotFound() throws ExecutionException, InterruptedException { // Added throws
+    void testEditProductNotFound() throws ExecutionException, InterruptedException { // Added throws
         UUID productId = UUID.randomUUID();
         Product updatedProduct = new Product("Laptop", "Computing", 15, 1199.99);
         updatedProduct.setId(productId);
@@ -114,7 +114,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testDeleteProductSuccess() throws ExecutionException, InterruptedException { // Added throws
+    void testDeleteProductSuccess() throws ExecutionException, InterruptedException { // Added throws
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         when(productRepository.findByName("Laptop")).thenReturn(Optional.of(product));
         doNothing().when(productRepository).delete(product); // Mock void method
@@ -127,7 +127,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testDeleteProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
+    void testDeleteProductNotConfirmed() throws ExecutionException, InterruptedException { // Added throws
         CompletableFuture<Boolean> futureResult = productService.deleteProduct("Laptop", false);
 
         assertFalse(futureResult.get()); // Get the result from CompletableFuture
@@ -136,7 +136,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testDeleteProductNotFound() throws ExecutionException, InterruptedException { // Added throws
+    void testDeleteProductNotFound() throws ExecutionException, InterruptedException { // Added throws
         when(productRepository.findByName("Laptop")).thenReturn(Optional.empty());
 
         CompletableFuture<Boolean> futureResult = productService.deleteProduct("Laptop", true);
@@ -148,7 +148,7 @@ public class ProductServiceTest {
 
     // --- Synchronous methods tests remain unchanged ---
     @Test
-    public void testGetProductByIdSuccess() {
+    void testGetProductByIdSuccess() {
         UUID productId = UUID.randomUUID();
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
@@ -160,7 +160,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testGetProductByIdInvalidUUID() {
+    void testGetProductByIdInvalidUUID() {
         Optional<Product> result = productService.getProductById("invalid-uuid");
 
         assertTrue(result.isEmpty());
@@ -168,7 +168,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testGetProductByIdNotFound() {
+    void testGetProductByIdNotFound() {
         UUID productId = UUID.randomUUID();
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
@@ -178,7 +178,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    public void testGetAllProducts() {
+    void testGetAllProducts() {
         List<Product> products = Arrays.asList(
                 new Product("Laptop", "Electronics", 10, 999.99),
                 new Product("Mouse", "Electronics", 50, 29.99)

@@ -14,19 +14,19 @@ public class DeletePaymentCommandTest {
     private String paymentId = "p123";
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         paymentService = Mockito.mock(PaymentServiceImpl.class);
         command = new DeletePaymentCommand(paymentService, paymentId);
     }
 
     @Test
-    public void testExecute_HappyPath_ShouldCallDeletePayment() {
+    void testExecute_HappyPath_ShouldCallDeletePayment() {
         command.execute();
         Mockito.verify(paymentService).deletePayment(paymentId);
     }
 
     @Test
-    public void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
+    void testExecute_UnhappyPath_ShouldThrowRuntimeException() {
         Mockito.doThrow(new RuntimeException("Payment not found"))
                 .when(paymentService).deletePayment(paymentId);
 

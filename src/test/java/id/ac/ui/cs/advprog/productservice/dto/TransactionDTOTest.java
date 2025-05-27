@@ -169,7 +169,7 @@ class TransactionDTOTest {
         dto2.setId("different-id");
         assertNotEquals(dto1, dto2);
 
-        assertDoesNotThrow(() -> dto1.toString());
+        assertDoesNotThrow(dto1::toString);
 
         TransactionDTO.TransactionItemDTO item1 = dto1.getItems().get(0);
         TransactionDTO.TransactionItemDTO item2 = new TransactionDTO.TransactionItemDTO();
@@ -181,6 +181,6 @@ class TransactionDTOTest {
 
         assertEquals(item1, item2);
         assertEquals(item1.hashCode(), item2.hashCode());
-        assertDoesNotThrow(() -> item1.toString());
+        assertDoesNotThrow(item1::toString);
     }
 }

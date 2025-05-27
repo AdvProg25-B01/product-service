@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 public class PaymentInvokerTest {
 
     @Test
-    public void testRunExecutesCommandSuccessfully() {
+    void testRunExecutesCommandSuccessfully() {
         // Arrange
         PaymentCommand command = mock(PaymentCommand.class);
         PaymentInvoker invoker = new PaymentInvoker();
@@ -19,13 +19,10 @@ public class PaymentInvokerTest {
         verify(command, times(1)).execute();
     }
     @Test
-    public void testRunWithoutSettingCommandThrowsException() {
+    void testRunWithoutSettingCommandThrowsException() {
         PaymentInvoker invoker = new PaymentInvoker();
 
         // Assert
-        org.junit.jupiter.api.Assertions.assertThrows(NullPointerException.class, () -> {
-            // Act
-            invoker.run();
-        });
+        org.junit.jupiter.api.Assertions.assertThrows(NullPointerException.class, invoker::run);
     }
 }

@@ -96,7 +96,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void testDeletePayment_notFound() {
+    void testDeletePayment_notFound() {
         String invalidPaymentId = "invalid";
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
@@ -107,7 +107,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void testDeletePayment_failsToDelete() {
+    void testDeletePayment_failsToDelete() {
         String nonExistentPaymentId = "non-existent-id";
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {

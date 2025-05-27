@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ProductFactoryTest {
 
     @Test
-    public void testCreateValidProduct() {
+    void testCreateValidProduct() {
         Product product = ProductFactory.createProduct("Laptop", "Elektronik", 30, 15000000.0);
 
         assertNotNull(product);
@@ -19,7 +19,7 @@ public class ProductFactoryTest {
     }
 
     @Test
-    public void testCreateInvalidProduct() {
+    void testCreateInvalidProduct() {
         assertThrows(IllegalArgumentException.class, () -> {
             ProductFactory.createProduct("", "Elektronik", 30, 15000000.0);
         });

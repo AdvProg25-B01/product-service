@@ -1,12 +1,21 @@
 package id.ac.ui.cs.advprog.productservice.productmanagement.controller;
 
+import id.ac.ui.cs.advprog.productservice.productmanagement.dto.SupplierAssignmentRequest;
 import id.ac.ui.cs.advprog.productservice.productmanagement.factory.ProductFactory;
 import id.ac.ui.cs.advprog.productservice.productmanagement.model.Product;
 import id.ac.ui.cs.advprog.productservice.productmanagement.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -124,5 +133,30 @@ public class ProductController {
                 })
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An error occurred during product deletion: " + ex.getMessage()));
+    }
+    
+    // Assign supplier to product
+    @PostMapping("/{productId}/assign-supplier")
+    public CompletableFuture<ResponseEntity<String>> assignSupplierToProduct(
+            @PathVariable String productId,
+            @RequestBody SupplierAssignmentRequest request) {
+        
+        try {
+            UUID productUuid = UUID.fromString(productId);
+            
+            return productService.assignSupplierToProduct(productUuid, request.getSupplierId())
+                    .thenApply(success -> {
+                        if (!success) {
+                            return ResponseEntity.badRequest()
+                                    .body("Failed to assign supplier. Product may not exist.");
+                        }
+                        return ResponseEntity.ok().body("Supplier assigned successfully to product");
+                    })
+                    .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("An error occurred during supplier assignment: " + ex.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest().body("Invalid UUID format for productId or supplierId"));
+        }
     }
 }

@@ -25,7 +25,7 @@ public class ProductRepositoryTest {
     private ProductRepository repository;
 
     @Test
-    public void testSaveAndFindProduct() {
+    void testSaveAndFindProduct() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         Product saved = repository.save(product);
@@ -38,7 +38,7 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testUpdateProduct() {
+    void testUpdateProduct() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         Product saved = repository.save(product);
@@ -55,7 +55,7 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testDeleteProduct() {
+    void testDeleteProduct() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         Product saved = repository.save(product);
@@ -70,7 +70,7 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testDeleteProductByName() {
+    void testDeleteProductByName() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         repository.save(product);
@@ -86,7 +86,7 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testFindById() {
+    void testFindById() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         Product saved = repository.save(product);
@@ -99,14 +99,14 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testFindByIdNotFound() {
+    void testFindByIdNotFound() {
         UUID nonExistentId = UUID.randomUUID();
         Optional<Product> found = repository.findById(nonExistentId);
         assertTrue(found.isEmpty());
     }
 
     @Test
-    public void testFindByName() {
+    void testFindByName() {
         // Create and save a product
         Product product = new Product("Laptop", "Electronics", 10, 999.99);
         repository.save(product);
@@ -118,13 +118,13 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testFindByNameNotFound() {
+    void testFindByNameNotFound() {
         Optional<Product> found = repository.findByName("NonExistentProduct");
         assertTrue(found.isEmpty());
     }
 
     @Test
-    public void testFindAll() {
+    void testFindAll() {
         // Create and save multiple products
         Product product1 = new Product("Laptop", "Electronics", 10, 999.99);
         Product product2 = new Product("Mouse", "Electronics", 50, 29.99);
