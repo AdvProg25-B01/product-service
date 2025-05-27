@@ -67,6 +67,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     testImplementation("com.h2database:h2")
     runtimeOnly("com.h2database:h2")
+
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 // Register unitTest task (explicit classpath + testClassesDirs)
